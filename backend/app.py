@@ -20,7 +20,8 @@ jwt = JWTManager(app)
 migrate = Migrate(app, db)
 
 # Import models after initializing extensions to avoid circular imports
-from backend.models import User, Progress
+from backend.models import User, Progress, Problem
+from backend.utils import recommend_problem
 
 # User registration endpoint
 @app.route('/register', methods=['POST'])
@@ -85,6 +86,19 @@ def get_progress(user_id):
     progress = Progress.query.filter_by(user_id=user_id).all()
     progress_list = [{'problem_id': p.problem_id, 'status': p.status, 'timestamp': p.timestamp} for p in progress]
     return jsonify(progress_list), 200
+
+# Recommend a problem for the user
+@app.route('/recommend/<int:user_id>', methods=['GET'])
+def recommend(user_id):
+    recommended_problem = recommend_problem(user_id)
+    if recommended_problem:
+        return jsonify({
+            'problem_id': recommended_problem.id,
+            'question': recommended_problem.question,
+            'difficulty': recommended_problem.difficulty
+        }), 200
+    else:
+        return jsonify({'message': 'No problems available'}), 404
 
 # Run the Flask application
 if __name__ == '__main__':
