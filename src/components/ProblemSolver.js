@@ -5,12 +5,14 @@ const ProblemSolver = ({ userId }) => {
     const [problem, setProblem] = useState(null);
     const [solution, setSolution] = useState('');
     const [feedback, setFeedback] = useState('');
+    const [hint, setHint] = useState('');
 
     useEffect(() => {
         const fetchProblem = async () => {
             try {
                 const response = await axios.get(`http://localhost:5000/recommend/${userId}`);
                 setProblem(response.data);
+                setHint(''); // Reset hint
             } catch (error) {
                 setFeedback('No problems available');
             }
@@ -18,6 +20,10 @@ const ProblemSolver = ({ userId }) => {
 
         fetchProblem();
     }, [userId]);
+
+    const handleHint = () => {
+        setHint('This is a hint for solving the problem.'); // Replace with actual hint logic
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -40,6 +46,8 @@ const ProblemSolver = ({ userId }) => {
                 <div>
                     <h2>Solve the Problem</h2>
                     <p>{problem.question}</p>
+                    <button onClick={handleHint}>Get Hint</button>
+                    <p>{hint}</p>
                     <form onSubmit={handleSubmit}>
                         <input
                             type="text"
