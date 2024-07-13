@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
-const Login = () => {
+const Login = ({ setUserId }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [message, setMessage] = useState('');
-    const [token, setToken] = useState('');
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -14,8 +13,11 @@ const Login = () => {
                 email,
                 password
             });
-            setToken(response.data.access_token);
+            const { access_token } = response.data;
             setMessage('Login successful');
+            // Decode the token to get the user ID (assumes a standard JWT payload)
+            const decodedToken = JSON.parse(atob(access_token.split('.')[1]));
+            setUserId(decodedToken.identity.user_id); // Assumes the payload contains user_id
         } catch (error) {
             setMessage('Invalid credentials');
         }
