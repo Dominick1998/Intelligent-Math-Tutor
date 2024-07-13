@@ -54,7 +54,7 @@ def login():
     user = User.query.filter_by(email=email).first()
     if user and bcrypt.check_password_hash(user.password, password):
         # Create a JWT access token
-        access_token = create_access_token(identity={'username': user.username, 'email': user.email})
+        access_token = create_access_token(identity={'user_id': user.id, 'username': user.username, 'email': user.email})
         return jsonify({'access_token': access_token}), 200
 
     return jsonify({'message': 'Invalid credentials'}), 401
