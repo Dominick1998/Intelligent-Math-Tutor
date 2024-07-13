@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Register from './components/Register';
 import Login from './components/Login';
 import ProblemSolver from './components/ProblemSolver';
+import Progress from './components/Progress';
 
 const App = () => {
     const [userId, setUserId] = useState(null);
@@ -11,10 +12,13 @@ const App = () => {
             {!userId ? (
                 <div>
                     <Register />
-                    <Login />
+                    <Login setUserId={setUserId} />
                 </div>
             ) : (
-                <ProblemSolver userId={userId} />
+                <div>
+                    <ProblemSolver userId={userId} />
+                    <Progress userId={userId} />
+                </div>
             )}
         </div>
     );
