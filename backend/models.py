@@ -2,22 +2,22 @@ from backend.app import db
 
 # User model to store user information
 class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(150), unique=True, nullable=False)
-    email = db.Column(db.String(150), unique=True, nullable=False)
-    password = db.Column(db.String(256), nullable=False)
+    id = db.Column(db.Integer, primary_key=True)  # Unique identifier for each user
+    username = db.Column(db.String(150), unique=True, nullable=False)  # Username, must be unique
+    email = db.Column(db.String(150), unique=True, nullable=False)  # Email, must be unique
+    password = db.Column(db.String(256), nullable=False)  # Hashed password
 
 # Progress model to track user progress on problems
 class Progress(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    problem_id = db.Column(db.Integer, nullable=False)
-    status = db.Column(db.String(50), nullable=False)
-    timestamp = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
+    id = db.Column(db.Integer, primary_key=True)  # Unique identifier for each progress entry
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Foreign key to User model
+    problem_id = db.Column(db.Integer, nullable=False)  # Identifier for the problem
+    status = db.Column(db.String(50), nullable=False)  # Status of the problem (e.g., 'completed', 'in-progress')
+    timestamp = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())  # Timestamp of when the progress was tracked
 
 # Problem model to store math problems
 class Problem(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    question = db.Column(db.Text, nullable=False)
-    answer = db.Column(db.Text, nullable=False)
-    difficulty = db.Column(db.String(50), nullable=False)
+    id = db.Column(db.Integer, primary_key=True)  # Unique identifier for each problem
+    question = db.Column(db.Text, nullable=False)  # Question text
+    answer = db.Column(db.Text, nullable=False)  # Answer text
+    difficulty = db.Column(db.String(50), nullable=False)  # Difficulty level (e.g., 'easy', 'medium', 'hard')
