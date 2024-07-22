@@ -29,7 +29,7 @@ const ProblemSolver = ({ userId }) => {
         e.preventDefault();
         // Simple client-side solution validation
         if (solution === problem.answer) {
-            setFeedback('Correct answer!');
+            setFeedback('Correct answer! ' + problem.feedback);
             await axios.post('http://localhost:5000/progress', {
                 user_id: userId,
                 problem_id: problem.problem_id,
