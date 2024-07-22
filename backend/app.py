@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, create_access_token
 from flask_migrate import Migrate
+from sqlalchemy.exc import IntegrityError
 
 # Initialize the Flask application
 app = Flask(__name__)
@@ -39,7 +40,11 @@ def register():
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
     new_user = User(username=username, email=email, password=hashed_password)
     db.session.add(new_user)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'message': 'Error saving user data'}), 500
 
     return jsonify({'message': 'User registered successfully'}), 201
 
@@ -72,10 +77,18 @@ def track_progress():
     problem_id = data.get('problem_id')
     status = data.get('status')
 
+    # Validate input data
+    if not user_id or not problem_id or not status:
+        return jsonify({'message': 'Invalid input data'}), 400
+
     # Create a new progress entry
     new_progress = Progress(user_id=user_id, problem_id=problem_id, status=status)
     db.session.add(new_progress)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'message': 'Error saving progress data'}), 500
 
     return jsonify({'message': 'Progress tracked successfully'}), 201
 
