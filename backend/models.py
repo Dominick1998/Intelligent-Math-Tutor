@@ -21,3 +21,4 @@ class Problem(db.Model):
     question = db.Column(db.Text, nullable=False)  # Question text
     answer = db.Column(db.Text, nullable=False)  # Answer text
     difficulty = db.Column(db.String(50), nullable=False)  # Difficulty level (e.g., 'easy', 'medium', 'hard')
+    feedback = db.Column(db.Text, nullable=True)  # Feedback for the problem
