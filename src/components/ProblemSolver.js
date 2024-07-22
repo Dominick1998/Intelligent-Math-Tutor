@@ -22,7 +22,7 @@ const ProblemSolver = ({ userId }) => {
     }, [userId]);
 
     const handleHint = () => {
-        setHint('This is a hint for solving the problem.'); // Replace with actual hint logic
+        setHint(problem.feedback); // Display feedback as hint
     };
 
     const handleSubmit = async (e) => {
@@ -35,6 +35,7 @@ const ProblemSolver = ({ userId }) => {
                 problem_id: problem.problem_id,
                 status: 'completed'
             });
+            setSolution(''); // Reset solution input
         } else {
             setFeedback('Incorrect answer, try again.');
         }
