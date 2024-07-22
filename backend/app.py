@@ -95,7 +95,8 @@ def recommend(user_id):
         return jsonify({
             'problem_id': recommended_problem.id,
             'question': recommended_problem.question,
-            'difficulty': recommended_problem.difficulty
+            'difficulty': recommended_problem.difficulty,
+            'feedback': recommended_problem.feedback
         }), 200
     else:
         return jsonify({'message': 'No problems available'}), 404
