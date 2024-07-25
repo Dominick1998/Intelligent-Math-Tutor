@@ -1,7 +1,7 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
-from flask_jwt_extended import JWTManager, create_access_token
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, unset_jwt_cookies
 from flask_migrate import Migrate
 from sqlalchemy.exc import IntegrityError
 
@@ -60,9 +60,18 @@ def login():
     if user and bcrypt.check_password_hash(user.password, password):
         # Create a JWT access token
         access_token = create_access_token(identity={'user_id': user.id, 'username': user.username, 'email': user.email})
-        return jsonify({'access_token': access_token}), 200
+        response = jsonify({'access_token': access_token})
+        return response, 200
 
     return jsonify({'message': 'Invalid credentials'}), 401
+
+# User logout endpoint
+@app.route('/logout', methods=['POST'])
+@jwt_required()
+def logout():
+    response = jsonify({"message": "Logout successful"})
+    unset_jwt_cookies(response)
+    return response, 200
 
 # Home route
 @app.route('/')
@@ -71,6 +80,7 @@ def home():
 
 # Track user progress endpoint
 @app.route('/progress', methods=['POST'])
+@jwt_required()
 def track_progress():
     data = request.get_json()
     user_id = data.get('user_id')
@@ -94,6 +104,7 @@ def track_progress():
 
 # Get user progress endpoint
 @app.route('/progress/<int:user_id>', methods=['GET'])
+@jwt_required()
 def get_progress(user_id):
     # Retrieve all progress entries for the given user
     progress = Progress.query.filter_by(user_id=user_id).all()
@@ -102,6 +113,7 @@ def get_progress(user_id):
 
 # Recommend a problem for the user
 @app.route('/recommend/<int:user_id>', methods=['GET'])
+@jwt_required()
 def recommend(user_id):
     recommended_problem = recommend_problem(user_id)
     if recommended_problem:
