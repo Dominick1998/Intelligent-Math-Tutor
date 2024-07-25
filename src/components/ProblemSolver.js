@@ -10,7 +10,10 @@ const ProblemSolver = ({ userId }) => {
     useEffect(() => {
         const fetchProblem = async () => {
             try {
-                const response = await axios.get(`http://localhost:5000/recommend/${userId}`);
+                const token = localStorage.getItem('access_token');
+                const response = await axios.get(`http://localhost:5000/recommend/${userId}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
                 setProblem(response.data);
                 setHint(''); // Reset hint
             } catch (error) {
@@ -30,10 +33,13 @@ const ProblemSolver = ({ userId }) => {
         // Simple client-side solution validation
         if (solution === problem.answer) {
             setFeedback('Correct answer! ' + problem.feedback);
+            const token = localStorage.getItem('access_token');
             await axios.post('http://localhost:5000/progress', {
                 user_id: userId,
                 problem_id: problem.problem_id,
                 status: 'completed'
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
             });
             setSolution(''); // Reset solution input
         } else {
