@@ -15,6 +15,7 @@ const Login = ({ setUserId }) => {
             });
             const { access_token } = response.data;
             setMessage('Login successful');
+            localStorage.setItem('access_token', access_token);
             // Decode the token to get the user ID (assumes a standard JWT payload)
             const decodedToken = JSON.parse(atob(access_token.split('.')[1]));
             setUserId(decodedToken.identity.user_id); // Assumes the payload contains user_id
