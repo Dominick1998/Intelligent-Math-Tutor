@@ -3,6 +3,7 @@ import Register from './components/Register';
 import Login from './components/Login';
 import ProblemSolver from './components/ProblemSolver';
 import Progress from './components/Progress';
+import Logout from './components/Logout';
 import './App.css';
 
 const App = () => {
@@ -17,6 +18,7 @@ const App = () => {
                 </div>
             ) : (
                 <div>
+                    <Logout setUserId={setUserId} />
                     <ProblemSolver userId={userId} />
                     <Progress userId={userId} />
                 </div>
