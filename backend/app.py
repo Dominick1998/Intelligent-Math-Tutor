@@ -73,6 +73,33 @@ def logout():
     unset_jwt_cookies(response)
     return response, 200
 
+# Get user profile endpoint
+@app.route('/profile', methods=['GET'])
+@jwt_required()
+def get_profile():
+    current_user = get_jwt_identity()
+    user = User.query.filter_by(id=current_user['user_id']).first()
+    if user:
+        return jsonify({
+            'username': user.username,
+            'email': user.email
+        }), 200
+    return jsonify({'message': 'User not found'}), 404
+
+# Update user profile endpoint
+@app.route('/profile', methods=['PUT'])
+@jwt_required()
+def update_profile():
+    current_user = get_jwt_identity()
+    data = request.get_json()
+    user = User.query.filter_by(id=current_user['user_id']).first()
+    if user:
+        user.username = data.get('username', user.username)
+        user.email = data.get('email', user.email)
+        db.session.commit()
+        return jsonify({'message': 'Profile updated successfully'}), 200
+    return jsonify({'message': 'User not found'}), 404
+
 # Home route
 @app.route('/')
 def home():
