@@ -4,6 +4,7 @@ import Login from './components/Login';
 import ProblemSolver from './components/ProblemSolver';
 import Progress from './components/Progress';
 import Logout from './components/Logout';
+import Profile from './components/Profile';
 import './App.css';
 
 const App = () => {
@@ -19,6 +20,7 @@ const App = () => {
             ) : (
                 <div>
                     <Logout setUserId={setUserId} />
+                    <Profile />
                     <ProblemSolver userId={userId} />
                     <Progress userId={userId} />
                 </div>
