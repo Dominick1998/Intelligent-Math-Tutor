@@ -100,6 +100,28 @@ def update_profile():
         return jsonify({'message': 'Profile updated successfully'}), 200
     return jsonify({'message': 'User not found'}), 404
 
+# Get user dashboard data endpoint
+@app.route('/dashboard', methods=['GET'])
+@jwt_required()
+def get_dashboard():
+    current_user = get_jwt_identity()
+    user = User.query.filter_by(id=current_user['user_id']).first()
+    if user:
+        progress = Progress.query.filter_by(user_id=user.id).all()
+        total_problems = len(progress)
+        correct_answers = sum(1 for p in progress if p.status == 'completed')
+        incorrect_answers = total_problems - correct_answers
+        performance_ratio = correct_answers / total_problems if total_problems else 0
+        return jsonify({
+            'username': user.username,
+            'email': user.email,
+            'total_problems': total_problems,
+            'correct_answers': correct_answers,
+            'incorrect_answers': incorrect_answers,
+            'performance_ratio': performance_ratio
+        }), 200
+    return jsonify({'message': 'User not found'}), 404
+
 # Home route
 @app.route('/')
 def home():
