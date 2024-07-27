@@ -83,6 +83,22 @@ def test_update_profile(client):
     assert response.status_code == 200
     assert b'Profile updated successfully' in response.data
 
+def test_get_dashboard(client):
+    client.post('/register', json={
+        'username': 'testuser',
+        'email': 'test@example.com',
+        'password': 'password123'
+    })
+    login_response = client.post('/login', json={
+        'email': 'test@example.com',
+        'password': 'password123'
+    })
+    access_token = login_response.json['access_token']
+    response = client.get('/dashboard', headers={'Authorization': f'Bearer {access_token}'})
+    assert response.status_code == 200
+    assert b'testuser' in response.data
+    assert b'test@example.com' in response.data
+
 def test_recommend(client):
     user = User(username='testuser', email='test@example.com', password='password123')
     db.session.add(user)
