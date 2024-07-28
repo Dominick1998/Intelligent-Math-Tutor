@@ -11,6 +11,7 @@ An intelligent tutoring system that provides personalized math problem-solving a
 - [API Endpoints](#api-endpoints)
 - [Testing](#testing)
 - [Contributing](#contributing)
+- [Deployment](#deployment)
 - [License](#license)
 
 ## Features
@@ -134,6 +135,20 @@ An intelligent tutoring system that provides personalized math problem-solving a
 - **Get Progress:** `GET /progress/<int:user_id>`
   - Response: `[ { "problem_id": 1, "status": "completed", "timestamp": "2023-01-01T00:00:00" }, ... ]`
 
+### User Profile
+
+- **Get Profile:** `GET /profile`
+  - Response: `{ "username": "your_username", "email": "your_email" }`
+
+- **Update Profile:** `PUT /profile`
+  - Request Body: `{ "username": "new_username", "email": "new_email" }`
+  - Response: `{ "message": "Profile updated successfully" }`
+
+### Dashboard
+
+- **Get Dashboard:** `GET /dashboard`
+  - Response: `{ "username": "your_username", "email": "your_email", "total_problems": 10, "correct_answers": 8, "incorrect_answers": 2, "performance_ratio": 0.8 }`
+
 ## Testing
 
 ### Backend Tests
@@ -169,6 +184,51 @@ Contributions are welcome! Please follow these steps to contribute:
 3. Commit your changes (`git commit -m 'Add some feature'`)
 4. Push to the branch (`git push origin feature/YourFeature`)
 5. Open a pull request
+
+## Deployment
+
+### Backend Deployment
+
+1. **Configure Environment Variables:**
+   - Create a `.env` file in the `backend` directory with the following content:
+     ```plaintext
+     FLASK_APP=app.py
+     FLASK_ENV=production
+     SQLALCHEMY_DATABASE_URI=postgresql://username:password@hostname:port/database
+     SECRET_KEY=your_secret_key
+     JWT_SECRET_KEY=your_jwt_secret_key
+     ```
+
+2. **Set Up PostgreSQL Database:**
+   - Create a PostgreSQL database using a service like Heroku, AWS RDS, or a local PostgreSQL server.
+   - Update the `.env` file with the PostgreSQL connection details.
+
+3. **Run Database Migrations:**
+   ```bash
+   flask db upgrade
+   ```
+
+4. **Deploy to Heroku:**
+   ```bash
+   heroku create
+   git add .
+   git commit -m "Prepare for Heroku deployment"
+   git push heroku main
+   heroku run flask db upgrade
+   ```
+
+### Frontend Deployment
+
+1. **Build the React Application:**
+   ```bash
+   npm run build
+   ```
+
+2. **Deploy to Vercel:**
+   ```bash
+   npm install -g vercel
+   vercel
+   ```
 
 ## License
 
