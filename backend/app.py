@@ -4,15 +4,16 @@ from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, unset_jwt_cookies
 from flask_migrate import Migrate
 from sqlalchemy.exc import IntegrityError
+import os
 
 # Initialize the Flask application
 app = Flask(__name__)
 
 # Configure the database URI and other settings
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'  # Use SQLite for simplicity; update as needed
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI', 'sqlite:///users.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # Disable track modifications to save resources
-app.config['SECRET_KEY'] = 'your_secret_key'  # Secret key for session management
-app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'  # Secret key for JWT
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your_secret_key')
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'your_jwt_secret_key')
 
 # Initialize extensions
 db = SQLAlchemy(app)
