@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 # Configure the database URI and other settings
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI', 'sqlite:///users.db')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # Disable track modifications to save resources
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your_secret_key')
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'your_jwt_secret_key')
 
@@ -25,6 +25,16 @@ migrate = Migrate(app, db)
 from backend.models import User, Progress, Problem
 from backend.utils import recommend_problem
 
+# Custom error handler for validation errors
+@app.errorhandler(400)
+def bad_request(error):
+    return jsonify({'message': 'Bad Request', 'details': str(error)}), 400
+
+# Custom error handler for unauthorized access
+@app.errorhandler(401)
+def unauthorized(error):
+    return jsonify({'message': 'Unauthorized', 'details': str(error)}), 401
+
 # User registration endpoint
 @app.route('/register', methods=['POST'])
 def register():
@@ -33,11 +43,12 @@ def register():
     email = data.get('email')
     password = data.get('password')
 
-    # Check if the user already exists
-    if User.query.filter_by(email=email).first() or User.query.filter_by(username=username).first():
-        return jsonify({'message': 'User already exists'}), 400
+    if not username or not email or not password:
+        return bad_request('Missing username, email, or password')
 
-    # Hash the password and create a new user
+    if User.query.filter_by(email=email).first() or User.query.filter_by(username=username).first():
+        return bad_request('User already exists')
+
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
     new_user = User(username=username, email=email, password=hashed_password)
     db.session.add(new_user)
@@ -56,15 +67,16 @@ def login():
     email = data.get('email')
     password = data.get('password')
 
-    # Find the user by email
+    if not email or not password:
+        return bad_request('Missing email or password')
+
     user = User.query.filter_by(email=email).first()
     if user and bcrypt.check_password_hash(user.password, password):
-        # Create a JWT access token
         access_token = create_access_token(identity={'user_id': user.id, 'username': user.username, 'email': user.email})
         response = jsonify({'access_token': access_token})
         return response, 200
 
-    return jsonify({'message': 'Invalid credentials'}), 401
+    return unauthorized('Invalid credentials')
 
 # User logout endpoint
 @app.route('/logout', methods=['POST'])
@@ -137,11 +149,9 @@ def track_progress():
     problem_id = data.get('problem_id')
     status = data.get('status')
 
-    # Validate input data
     if not user_id or not problem_id or not status:
-        return jsonify({'message': 'Invalid input data'}), 400
+        return bad_request('Missing user_id, problem_id, or status')
 
-    # Create a new progress entry
     new_progress = Progress(user_id=user_id, problem_id=problem_id, status=status)
     db.session.add(new_progress)
     try:
@@ -156,7 +166,6 @@ def track_progress():
 @app.route('/progress/<int:user_id>', methods=['GET'])
 @jwt_required()
 def get_progress(user_id):
-    # Retrieve all progress entries for the given user
     progress = Progress.query.filter_by(user_id=user_id).all()
     progress_list = [{'problem_id': p.problem_id, 'status': p.status, 'timestamp': p.timestamp} for p in progress]
     return jsonify(progress_list), 200
