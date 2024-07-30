@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import './Form.css';
 
 const Register = () => {
     const [username, setUsername] = useState('');
@@ -17,12 +18,12 @@ const Register = () => {
             });
             setMessage(response.data.message);
         } catch (error) {
-            setMessage('Error registering user');
+            setMessage(error.response.data.message || 'Error registering user');
         }
     };
 
     return (
-        <div>
+        <div className="form-container">
             <h2>Register</h2>
             <form onSubmit={handleRegister}>
                 <input
@@ -45,7 +46,7 @@ const Register = () => {
                 />
                 <button type="submit">Register</button>
             </form>
-            <p>{message}</p>
+            {message && <p className="message">{message}</p>}
         </div>
     );
 };
