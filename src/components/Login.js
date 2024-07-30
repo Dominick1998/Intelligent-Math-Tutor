@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import './Form.css';
 
 const Login = ({ setUserId }) => {
     const [email, setEmail] = useState('');
@@ -16,16 +17,15 @@ const Login = ({ setUserId }) => {
             const { access_token } = response.data;
             setMessage('Login successful');
             localStorage.setItem('access_token', access_token);
-            // Decode the token to get the user ID (assumes a standard JWT payload)
             const decodedToken = JSON.parse(atob(access_token.split('.')[1]));
-            setUserId(decodedToken.identity.user_id); // Assumes the payload contains user_id
+            setUserId(decodedToken.identity.user_id);
         } catch (error) {
-            setMessage('Invalid credentials');
+            setMessage(error.response.data.message || 'Invalid credentials');
         }
     };
 
     return (
-        <div>
+        <div className="form-container">
             <h2>Login</h2>
             <form onSubmit={handleLogin}>
                 <input
@@ -42,7 +42,7 @@ const Login = ({ setUserId }) => {
                 />
                 <button type="submit">Login</button>
             </form>
-            <p>{message}</p>
+            {message && <p className="message">{message}</p>}
         </div>
     );
 };
