@@ -5,6 +5,10 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 from flask_migrate import Migrate
 from sqlalchemy.exc import IntegrityError
 import os
+import logging
+from logging.handlers import RotatingFileHandler
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 # Initialize the Flask application
 app = Flask(__name__)
@@ -21,6 +25,25 @@ bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 migrate = Migrate(app, db)
 
+# Set up logging
+if not os.path.exists('logs'):
+    os.mkdir('logs')
+file_handler = RotatingFileHandler('logs/app.log', maxBytes=10240, backupCount=10)
+file_handler.setFormatter(logging.Formatter(
+    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
+file_handler.setLevel(logging.INFO)
+app.logger.addHandler(file_handler)
+
+app.logger.setLevel(logging.INFO)
+app.logger.info('Intelligent Math Tutor startup')
+
+# Initialize rate limiter
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"]
+)
+
 # Import models after initializing extensions to avoid circular imports
 from backend.models import User, Progress, Problem
 from backend.utils import recommend_problem
@@ -28,11 +51,13 @@ from backend.utils import recommend_problem
 # Custom error handler for validation errors
 @app.errorhandler(400)
 def bad_request(error):
+    app.logger.error(f'Bad Request: {error}')
     return jsonify({'message': 'Bad Request', 'details': str(error)}), 400
 
 # Custom error handler for unauthorized access
 @app.errorhandler(401)
 def unauthorized(error):
+    app.logger.error(f'Unauthorized: {error}')
     return jsonify({'message': 'Unauthorized', 'details': str(error)}), 401
 
 # User registration endpoint
@@ -62,6 +87,7 @@ def register():
 
 # User login endpoint
 @app.route('/login', methods=['POST'])
+@limiter.limit("5 per minute")
 def login():
     data = request.get_json()
     email = data.get('email')
