@@ -7,6 +7,7 @@ import Logout from './components/Logout';
 import Profile from './components/Profile';
 import Dashboard from './components/Dashboard';
 import Feedback from './components/Feedback';
+import Analytics from './components/Analytics';
 import './App.css';
 
 const App = () => {
@@ -27,6 +28,7 @@ const App = () => {
                     <ProblemSolver userId={userId} />
                     <Progress userId={userId} />
                     <Feedback />
+                    <Analytics />
                 </div>
             )}
         </div>
