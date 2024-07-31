@@ -45,8 +45,7 @@ limiter = Limiter(
 )
 
 # Import models after initializing extensions to avoid circular imports
-from backend.models import User, Progress, Problem
-from backend.utils import recommend_problem
+from backend.models import User, Progress, Problem, Feedback
 
 # Custom error handler for validation errors
 @app.errorhandler(400)
@@ -160,6 +159,27 @@ def get_dashboard():
             'performance_ratio': performance_ratio
         }), 200
     return jsonify({'message': 'User not found'}), 404
+
+# Submit user feedback endpoint
+@app.route('/feedback', methods=['POST'])
+@jwt_required()
+def submit_feedback():
+    current_user = get_jwt_identity()
+    data = request.get_json()
+    feedback_text = data.get('feedback')
+
+    if not feedback_text:
+        return bad_request('Missing feedback text')
+
+    feedback = Feedback(user_id=current_user['user_id'], feedback=feedback_text)
+    db.session.add(feedback)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'message': 'Error saving feedback'}), 500
+
+    return jsonify({'message': 'Feedback submitted successfully'}), 201
 
 # Home route
 @app.route('/')
