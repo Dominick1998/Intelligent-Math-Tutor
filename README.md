@@ -21,6 +21,8 @@ An intelligent tutoring system that provides personalized math problem-solving a
 - **Detailed Feedback:** Provides detailed feedback and hints for each problem.
 - **Progress Tracking:** Tracks user progress and displays performance metrics.
 - **Interactive Interface:** User-friendly interface for solving math problems.
+- **User Feedback:** Allows users to submit feedback about the application.
+- **User Analytics:** Provides analytics data on user performance and feedback.
 
 ## Tech Stack
 
@@ -111,6 +113,12 @@ An intelligent tutoring system that provides personalized math problem-solving a
 4. **Track progress:**
    - View your progress and performance metrics
 
+5. **Submit feedback:**
+   - Use the feedback form to submit your feedback about the application
+
+6. **View analytics:**
+   - Access the analytics dashboard to view your performance metrics and feedback count
+
 ## API Endpoints
 
 ### Authentication
@@ -148,6 +156,17 @@ An intelligent tutoring system that provides personalized math problem-solving a
 
 - **Get Dashboard:** `GET /dashboard`
   - Response: `{ "username": "your_username", "email": "your_email", "total_problems": 10, "correct_answers": 8, "incorrect_answers": 2, "performance_ratio": 0.8 }`
+
+### Feedback
+
+- **Submit Feedback:** `POST /feedback`
+  - Request Body: `{ "feedback": "your_feedback" }`
+  - Response: `{ "message": "Feedback submitted successfully" }`
+
+### Analytics
+
+- **Get Analytics:** `GET /analytics`
+  - Response: `{ "username": "your_username", "email": "your_email", "total_problems": 10, "correct_answers": 8, "incorrect_answers": 2, "performance_ratio": 0.8, "feedback_count": 5 }`
 
 ## Testing
 
