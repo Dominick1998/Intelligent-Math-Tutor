@@ -8,6 +8,9 @@ import Profile from './components/Profile';
 import Dashboard from './components/Dashboard';
 import Feedback from './components/Feedback';
 import Analytics from './components/Analytics';
+import Badges from './components/Badges';
+import Notifications from './components/Notifications';
+import SocialShare from './components/SocialShare';
 import './App.css';
 
 const App = () => {
@@ -29,6 +32,9 @@ const App = () => {
                     <Progress userId={userId} />
                     <Feedback />
                     <Analytics />
+                    <Badges />
+                    <Notifications />
+                    <SocialShare />
                 </div>
             )}
         </div>
