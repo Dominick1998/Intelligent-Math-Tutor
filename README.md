@@ -23,6 +23,9 @@ An intelligent tutoring system that provides personalized math problem-solving a
 - **Interactive Interface:** User-friendly interface for solving math problems.
 - **User Feedback:** Allows users to submit feedback about the application.
 - **User Analytics:** Provides analytics data on user performance and feedback.
+- **Badges and Rewards:** Users earn badges for their achievements.
+- **Notifications:** Users receive notifications about their progress and other updates.
+- **Social Sharing:** Users can share their achievements on social media.
 
 ## Tech Stack
 
@@ -37,6 +40,8 @@ An intelligent tutoring system that provides personalized math problem-solving a
   - Flask-JWT-Extended
   - Flask-Bcrypt
   - Flask-Migrate
+  - Flask-Babel
+  - Flask-Limiter
 
 - **Database:**
   - SQLite (for simplicity, can be replaced with any SQL database)
@@ -119,6 +124,15 @@ An intelligent tutoring system that provides personalized math problem-solving a
 6. **View analytics:**
    - Access the analytics dashboard to view your performance metrics and feedback count
 
+7. **View badges:**
+   - Check the badges you have earned for your achievements
+
+8. **Read notifications:**
+   - Stay updated with notifications about your progress and other updates
+
+9. **Share achievements:**
+   - Share your achievements on social media platforms
+
 ## API Endpoints
 
 ### Authentication
@@ -167,6 +181,27 @@ An intelligent tutoring system that provides personalized math problem-solving a
 
 - **Get Analytics:** `GET /analytics`
   - Response: `{ "username": "your_username", "email": "your_email", "total_problems": 10, "correct_answers": 8, "incorrect_answers": 2, "performance_ratio": 0.8, "feedback_count": 5 }`
+
+### Badges
+
+- **Get Badges:** `GET /badges`
+  - Response: `[ { "name": "First Solve", "description": "Completed first problem", "date_awarded": "2023-01-01T00:00:00" }, ... ]`
+
+- **Award Badge:** `POST /award_badge`
+  - Request Body: `{ "name": "Badge Name", "description": "Badge description" }`
+  - Response: `{ "message": "Badge awarded successfully" }`
+
+### Notifications
+
+- **Get Notifications:** `GET /notifications`
+  - Response: `[ { "message": "You completed a problem!", "date_sent": "2023-01-01T00:00:00", "is_read": false }, ... ]`
+
+- **Send Notification:** `POST /notifications`
+  - Request Body: `{ "message": "Notification message" }`
+  - Response: `{ "message": "Notification sent successfully" }`
+
+- **Mark Notification as Read:** `POST /notifications/read/<int:id>`
+  - Response: `{ "message": "Notification marked as read" }`
 
 ## Testing
 
@@ -250,5 +285,7 @@ Contributions are welcome! Please follow these steps to contribute:
    ```
 
 ## License
+
+
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
