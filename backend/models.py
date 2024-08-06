@@ -8,6 +8,8 @@ class User(db.Model):
     password = db.Column(db.String(150), nullable=False)
     progress = db.relationship('Progress', backref='user', lazy=True)
     feedback = db.relationship('Feedback', backref='user', lazy=True)
+    badges = db.relationship('Badge', backref='user', lazy=True)
+    notifications = db.relationship('Notification', backref='user', lazy=True)
 
 class Progress(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -29,3 +31,17 @@ class Feedback(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     feedback = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Badge(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(200), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    date_awarded = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    message = db.Column(db.String(200), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    date_sent = db.Column(db.DateTime, default=datetime.utcnow)
+    is_read = db.Column(db.Boolean, default=False)
