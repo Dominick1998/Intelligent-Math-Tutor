@@ -6,3 +6,6 @@ Flask-SQLAlchemy==2.5.1
 Flask-Migrate==3.1.0
 pytest
 pytest-flask
+Flask-Babel==2.0.0
+Flask-Limiter==1.4
+requests==2.26.0
