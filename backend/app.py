@@ -48,7 +48,7 @@ limiter = Limiter(
 )
 
 # Import models after initializing extensions to avoid circular imports
-from backend.models import User, Progress, Problem, Feedback
+from backend.models import User, Progress, Problem, Feedback, Badge, Notification
 from backend.utils import recommend_problem
 
 @babel.localeselector
@@ -263,9 +263,78 @@ def get_analytics():
         }), 200
     return jsonify({'message': _('User not found')}), 404
 
-# Run the Flask application
-if __name__ == '__main__':
-    app.run(debug=True)
+# Get user badges endpoint
+@app.route('/badges', methods=['GET'])
+@jwt_required()
+def get_badges():
+    current_user = get_jwt_identity()
+    badges = Badge.query.filter_by(user_id=current_user['user_id']).all()
+    badge_list = [{'name': b.name, 'description': b.description, 'date_awarded': b.date_awarded} for b in badges]
+    return jsonify(badge_list), 200
+
+# Award a badge to the user endpoint
+@app.route('/award_badge', methods=['POST'])
+@jwt_required()
+def award_badge():
+    data = request.get_json()
+    badge_name = data.get('name')
+    description = data.get('description')
+    current_user = get_jwt_identity()
+
+    if not badge_name or not description:
+        return bad_request(_('Missing badge name or description'))
+
+    badge = Badge(name=badge_name, description=description, user_id=current_user['user_id'])
+    db.session.add(badge)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'message': _('Error awarding badge')}), 500
+
+    return jsonify({'message': _('Badge awarded successfully')}), 201
+
+# Get user notifications endpoint
+@app.route('/notifications', methods=['GET'])
+@jwt_required()
+def get_notifications():
+    current_user = get_jwt_identity()
+    notifications = Notification.query.filter_by(user_id=current_user['user_id']).all()
+    notification_list = [{'message': n.message, 'date_sent': n.date_sent, 'is_read': n.is_read} for n in notifications]
+    return jsonify(notification_list), 200
+
+# Send a notification to the user endpoint
+@app.route('/notifications', methods=['POST'])
+@jwt_required()
+def send_notification():
+    data = request.get_json()
+    message = data.get('message')
+    current_user = get_jwt_identity()
+
+    if not message:
+        return bad_request(_('Missing notification message'))
+
+    notification = Notification(message=message, user_id=current_user['user_id'])
+    db.session.add(notification)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'message': _('Error sending notification')}), 500
+
+    return jsonify({'message': _('Notification sent successfully')}), 201
+
+# Mark a notification as read endpoint
+@app.route('/notifications/read/<int:id>', methods=['POST'])
+@jwt_required()
+def mark_as_read(id):
+    current_user = get_jwt_identity()
+    notification = Notification.query.filter_by(id=id, user_id=current_user['user_id']).first()
+    if notification:
+        notification.is_read = True
+        db.session.commit()
+        return jsonify({'message': _('Notification marked as read')}), 200
+    return jsonify({'message': _('Notification not found')}), 404
 
 # Run the Flask application
 if __name__ == '__main__':
