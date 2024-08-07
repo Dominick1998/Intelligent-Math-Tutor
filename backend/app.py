@@ -48,7 +48,7 @@ limiter = Limiter(
 )
 
 # Import models after initializing extensions to avoid circular imports
-from backend.models import User, Progress, Problem, Feedback, Badge, Notification
+from backend.models import User, Progress, Problem, Feedback, Badge, Notification, Tutorial, LearningPath
 from backend.utils import recommend_problem
 
 @babel.localeselector
@@ -335,6 +335,106 @@ def mark_as_read(id):
         db.session.commit()
         return jsonify({'message': _('Notification marked as read')}), 200
     return jsonify({'message': _('Notification not found')}), 404
+
+# Get all tutorials
+@app.route('/tutorials', methods=['GET'])
+def get_tutorials():
+    tutorials = Tutorial.query.all()
+    tutorial_list = [{'id': t.id, 'title': t.title, 'content': t.content, 'problem_id': t.problem_id, 'date_created': t.date_created} for t in tutorials]
+    return jsonify(tutorial_list), 200
+
+# Add a new tutorial
+@app.route('/tutorials', methods=['POST'])
+@jwt_required()
+def add_tutorial():
+    data = request.get_json()
+    title = data.get('title')
+    content = data.get('content')
+    problem_id = data.get('problem_id')
+    current_user = get_jwt_identity()
+
+    if not title or not content or not problem_id:
+        return bad_request(_('Missing title, content, or problem_id'))
+
+    tutorial = Tutorial(title=title, content=content, problem_id=problem_id)
+    db.session.add(tutorial)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'message': _('Error saving tutorial')}), 500
+
+    return jsonify({'message': _('Tutorial added successfully')}), 201
+
+# Get a specific tutorial
+@app.route('/tutorials/<int:id>', methods=['GET'])
+def get_tutorial(id):
+    tutorial = Tutorial.query.filter_by(id=id).first()
+    if tutorial:
+        return jsonify({'id': tutorial.id, 'title': tutorial.title, 'content': tutorial.content, 'problem_id': tutorial.problem_id, 'date_created': tutorial.date_created}), 200
+    return jsonify({'message': _('Tutorial not found')}), 404
+
+# Get learning path for a user
+@app.route('/learning_path/<int:user_id>', methods=['GET'])
+@jwt_required()
+def get_learning_path(user_id):
+    learning_path = LearningPath.query.filter_by(user_id=user_id).first()
+    if learning_path:
+        return jsonify({'user_id': learning_path.user_id, 'problems': learning_path.problems, 'date_created': learning_path.date_created}), 200
+    return jsonify({'message': _('Learning path not found')}), 404
+
+# Create or update learning path for a user
+@app.route('/learning_path', methods=['POST'])
+@jwt_required()
+def create_update_learning_path():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    problems = data.get('problems')
+
+    if not user_id or not problems:
+        return bad_request(_('Missing user_id or problems'))
+
+    learning_path = LearningPath.query.filter_by(user_id=user_id).first()
+    if learning_path:
+        learning_path.problems = problems
+    else:
+        learning_path = LearningPath(user_id=user_id, problems=problems)
+        db.session.add(learning_path)
+
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'message': _('Error saving learning path')}), 500
+
+    return jsonify({'message': _('Learning path saved successfully')}), 201
+
+# Get all users
+@app.route('/admin/users', methods=['GET'])
+@jwt_required()
+def get_users():
+    users = User.query.all()
+    user_list = [{'id': u.id, 'username': u.username, 'email': u.email} for u in users]
+    return jsonify(user_list), 200
+
+# Delete a user
+@app.route('/admin/users/<int:id>', methods=['DELETE'])
+@jwt_required()
+def delete_user(id):
+    user = User.query.filter_by(id=id).first()
+    if user:
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify({'message': _('User deleted successfully')}), 200
+    return jsonify({'message': _('User not found')}), 404
+
+# Get all feedback
+@app.route('/admin/feedback', methods=['GET'])
+@jwt_required()
+def get_feedback():
+    feedback = Feedback.query.all()
+    feedback_list = [{'id': f.id, 'user_id': f.user_id, 'feedback': f.feedback, 'timestamp': f.timestamp} for f in feedback]
+    return jsonify(feedback_list), 200
 
 # Run the Flask application
 if __name__ == '__main__':
