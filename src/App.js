@@ -11,6 +11,9 @@ import Analytics from './components/Analytics';
 import Badges from './components/Badges';
 import Notifications from './components/Notifications';
 import SocialShare from './components/SocialShare';
+import Tutorials from './components/Tutorials';
+import LearningPath from './components/LearningPath';
+import AdminPanel from './components/AdminPanel';
 import './App.css';
 
 const App = () => {
@@ -35,6 +38,9 @@ const App = () => {
                     <Badges />
                     <Notifications />
                     <SocialShare />
+                    <Tutorials />
+                    <LearningPath userId={userId} />
+                    <AdminPanel />
                 </div>
             )}
         </div>
