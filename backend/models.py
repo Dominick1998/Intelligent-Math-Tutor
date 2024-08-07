@@ -10,6 +10,7 @@ class User(db.Model):
     feedback = db.relationship('Feedback', backref='user', lazy=True)
     badges = db.relationship('Badge', backref='user', lazy=True)
     notifications = db.relationship('Notification', backref='user', lazy=True)
+    learning_path = db.relationship('LearningPath', backref='user', lazy=True, uselist=False)
 
 class Progress(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -45,3 +46,16 @@ class Notification(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     date_sent = db.Column(db.DateTime, default=datetime.utcnow)
     is_read = db.Column(db.Boolean, default=False)
+
+class Tutorial(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    problem_id = db.Column(db.Integer, db.ForeignKey('problem.id'), nullable=False)
+    date_created = db.Column(db.DateTime, default=datetime.utcnow)
+
+class LearningPath(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    problems = db.Column(db.Text, nullable=False)
+    date_created = db.Column(db.DateTime, default=datetime.utcnow)
