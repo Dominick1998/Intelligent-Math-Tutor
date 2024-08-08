@@ -15,6 +15,7 @@ import Tutorials from './components/Tutorials';
 import LearningPath from './components/LearningPath';
 import AdminPanel from './components/AdminPanel';
 import CollaborationRoom from './components/CollaborationRoom';
+import Whiteboard from './components/Whiteboard';
 import './App.css';
 
 const App = () => {
@@ -44,6 +45,7 @@ const App = () => {
                     <LearningPath userId={userId} />
                     <AdminPanel />
                     <CollaborationRoom username={`user${userId}`} room={room} />
+                    <Whiteboard username={`user${userId}`} room={room} />
                 </div>
             )}
         </div>
