@@ -5,7 +5,7 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 from flask_migrate import Migrate
 from sqlalchemy.exc import IntegrityError
 from flask_babel import Babel, _
-from flask_socketio import SocketIO, join_room, leave_room, send
+from flask_socketio import SocketIO, join_room, leave_room, send, emit
 import os
 import logging
 from logging.handlers import RotatingFileHandler
@@ -455,6 +455,12 @@ def handle_leave(data):
 def handle_message(data):
     room = data['room']
     send(data['message'], to=room)
+
+# SocketIO events for interactive whiteboard
+@socketio.on('draw')
+def handle_draw(data):
+    room = data['room']
+    emit('draw', data['drawData'], to=room)
 
 # Run the Flask application
 if __name__ == '__main__':
