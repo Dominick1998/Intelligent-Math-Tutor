@@ -5,6 +5,7 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 from flask_migrate import Migrate
 from sqlalchemy.exc import IntegrityError
 from flask_babel import Babel, _
+from flask_socketio import SocketIO, join_room, leave_room, send
 import os
 import logging
 from logging.handlers import RotatingFileHandler
@@ -27,6 +28,7 @@ bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 migrate = Migrate(app, db)
 babel = Babel(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Set up logging
 if not os.path.exists('logs'):
@@ -436,6 +438,24 @@ def get_feedback():
     feedback_list = [{'id': f.id, 'user_id': f.user_id, 'feedback': f.feedback, 'timestamp': f.timestamp} for f in feedback]
     return jsonify(feedback_list), 200
 
+# SocketIO events for real-time collaboration
+@socketio.on('join')
+def handle_join(data):
+    room = data['room']
+    join_room(room)
+    send(f"{data['username']} has joined the room.", to=room)
+
+@socketio.on('leave')
+def handle_leave(data):
+    room = data['room']
+    leave_room(room)
+    send(f"{data['username']} has left the room.", to=room)
+
+@socketio.on('message')
+def handle_message(data):
+    room = data['room']
+    send(data['message'], to=room)
+
 # Run the Flask application
 if __name__ == '__main__':
-    app.run(debug=True)
+    socketio.run(app, debug=True)
