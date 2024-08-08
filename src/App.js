@@ -14,10 +14,12 @@ import SocialShare from './components/SocialShare';
 import Tutorials from './components/Tutorials';
 import LearningPath from './components/LearningPath';
 import AdminPanel from './components/AdminPanel';
+import CollaborationRoom from './components/CollaborationRoom';
 import './App.css';
 
 const App = () => {
     const [userId, setUserId] = useState(null);
+    const [room, setRoom] = useState('math101');
 
     return (
         <div className="App">
@@ -41,6 +43,7 @@ const App = () => {
                     <Tutorials />
                     <LearningPath userId={userId} />
                     <AdminPanel />
+                    <CollaborationRoom username={`user${userId}`} room={room} />
                 </div>
             )}
         </div>
