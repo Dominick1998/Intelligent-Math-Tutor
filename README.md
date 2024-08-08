@@ -26,6 +26,10 @@ An intelligent tutoring system that provides personalized math problem-solving a
 - **Badges and Rewards:** Users earn badges for their achievements.
 - **Notifications:** Users receive notifications about their progress and other updates.
 - **Social Sharing:** Users can share their achievements on social media.
+- **Interactive Whiteboard:** Real-time collaborative whiteboard for problem-solving.
+- **Video Tutorials:** Integration of video tutorials for complex problem explanations.
+- **Custom Problem Sets:** Users can create and share custom problem sets.
+- **Gamification:** Point system and leaderboards to enhance engagement.
 
 ## Tech Stack
 
@@ -42,6 +46,7 @@ An intelligent tutoring system that provides personalized math problem-solving a
   - Flask-Migrate
   - Flask-Babel
   - Flask-Limiter
+  - Flask-SocketIO
 
 - **Database:**
   - SQLite (for simplicity, can be replaced with any SQL database)
@@ -133,6 +138,18 @@ An intelligent tutoring system that provides personalized math problem-solving a
 9. **Share achievements:**
    - Share your achievements on social media platforms
 
+10. **Use the interactive whiteboard:**
+    - Collaborate in real-time using the interactive whiteboard
+
+11. **Watch video tutorials:**
+    - Access video tutorials for complex problem explanations
+
+12. **Create and share custom problem sets:**
+    - Create and share your own problem sets with others
+
+13. **Check the leaderboard:**
+    - View the leaderboard to see your ranking and earn points for solving problems
+
 ## API Endpoints
 
 ### Authentication
@@ -202,6 +219,43 @@ An intelligent tutoring system that provides personalized math problem-solving a
 
 - **Mark Notification as Read:** `POST /notifications/read/<int:id>`
   - Response: `{ "message": "Notification marked as read" }`
+
+### Whiteboard
+
+- **Join Whiteboard Session:** `POST /whiteboard/join`
+  - Request Body: `{ "room": "room_name", "username": "user_name" }`
+  - Response: `{ "message": "Joined whiteboard session" }`
+
+- **Leave Whiteboard Session:** `POST /whiteboard/leave`
+  - Request Body: `{ "room": "room_name", "username": "user_name" }`
+  - Response: `{ "message": "Left whiteboard session" }`
+
+- **Draw on Whiteboard:** `POST /whiteboard/draw`
+  - Request Body: `{ "room": "room_name", "drawData": { "x0": 0, "y0": 0, "x1": 1, "y1": 1 } }`
+  - Response: `{ "message": "Drawing sent" }`
+
+### Tutorials
+
+- **Get Tutorials:** `GET /tutorials`
+  - Response: `[ { "id": 1, "title": "Addition Tutorial", "content": "Video URL or Text Content", "problem_id": 1, "date_created": "2023-01-01T00:00:00" }, ... ]`
+
+- **Add Tutorial:** `POST /tutorials`
+  - Request Body: `{ "title": "New Tutorial", "content": "Video URL or Text Content", "problem_id": 1 }`
+ 
+
+ - Response: `{ "message": "Tutorial added successfully" }`
+
+- **Get Tutorial:** `GET /tutorials/<int:id>`
+  - Response: `{ "id": 1, "title": "Addition Tutorial", "content": "Video URL or Text Content", "problem_id": 1, "date_created": "2023-01-01T00:00:00" }`
+
+### Learning Path
+
+- **Get Learning Path:** `GET /learning_path/<int:user_id>`
+  - Response: `{ "user_id": 1, "problems": "1,2,3", "date_created": "2023-01-01T00:00:00" }`
+
+- **Create/Update Learning Path:** `POST /learning_path`
+  - Request Body: `{ "user_id": 1, "problems": "1,2,3" }`
+  - Response: `{ "message": "Learning path saved successfully" }`
 
 ## Testing
 
@@ -285,7 +339,3 @@ Contributions are welcome! Please follow these steps to contribute:
    ```
 
 ## License
-
-
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
