@@ -253,215 +253,37 @@ def get_analytics():
         correct_answers = sum(1 for p in progress if p.status == 'completed')
         incorrect_answers = total_problems - correct_answers
         performance_ratio = correct_answers / total_problems if total_problems else 0
-        feedback_count = Feedback.query.filter_by(user_id=user.id).count()
+        feedbacks = Feedback.query.filter_by(user_id=user.id).all()
+        feedback_list = [{'feedback': f.feedback, 'timestamp': f.timestamp} for f in feedbacks]
         return jsonify({
             'username': user.username,
-            'email': user.email,
             'total_problems': total_problems,
             'correct_answers': correct_answers,
             'incorrect_answers': incorrect_answers,
             'performance_ratio': performance_ratio,
-            'feedback_count': feedback_count
+            'feedbacks': feedback_list
         }), 200
     return jsonify({'message': _('User not found')}), 404
 
-# Get user badges endpoint
-@app.route('/badges', methods=['GET'])
-@jwt_required()
-def get_badges():
-    current_user = get_jwt_identity()
-    badges = Badge.query.filter_by(user_id=current_user['user_id']).all()
-    badge_list = [{'name': b.name, 'description': b.description, 'date_awarded': b.date_awarded} for b in badges]
-    return jsonify(badge_list), 200
-
-# Award a badge to the user endpoint
-@app.route('/award_badge', methods=['POST'])
-@jwt_required()
-def award_badge():
-    data = request.get_json()
-    badge_name = data.get('name')
-    description = data.get('description')
-    current_user = get_jwt_identity()
-
-    if not badge_name or not description:
-        return bad_request(_('Missing badge name or description'))
-
-    badge = Badge(name=badge_name, description=description, user_id=current_user['user_id'])
-    db.session.add(badge)
-    try:
-        db.session.commit()
-    except IntegrityError:
-        db.session.rollback()
-        return jsonify({'message': _('Error awarding badge')}), 500
-
-    return jsonify({'message': _('Badge awarded successfully')}), 201
-
-# Get user notifications endpoint
-@app.route('/notifications', methods=['GET'])
-@jwt_required()
-def get_notifications():
-    current_user = get_jwt_identity()
-    notifications = Notification.query.filter_by(user_id=current_user['user_id']).all()
-    notification_list = [{'message': n.message, 'date_sent': n.date_sent, 'is_read': n.is_read} for n in notifications]
-    return jsonify(notification_list), 200
-
-# Send a notification to the user endpoint
-@app.route('/notifications', methods=['POST'])
-@jwt_required()
-def send_notification():
-    data = request.get_json()
-    message = data.get('message')
-    current_user = get_jwt_identity()
-
-    if not message:
-        return bad_request(_('Missing notification message'))
-
-    notification = Notification(message=message, user_id=current_user['user_id'])
-    db.session.add(notification)
-    try:
-        db.session.commit()
-    except IntegrityError:
-        db.session.rollback()
-        return jsonify({'message': _('Error sending notification')}), 500
-
-    return jsonify({'message': _('Notification sent successfully')}), 201
-
-# Mark a notification as read endpoint
-@app.route('/notifications/read/<int:id>', methods=['POST'])
-@jwt_required()
-def mark_as_read(id):
-    current_user = get_jwt_identity()
-    notification = Notification.query.filter_by(id=id, user_id=current_user['user_id']).first()
-    if notification:
-        notification.is_read = True
-        db.session.commit()
-        return jsonify({'message': _('Notification marked as read')}), 200
-    return jsonify({'message': _('Notification not found')}), 404
-
-# Get all tutorials
-@app.route('/tutorials', methods=['GET'])
-def get_tutorials():
-    tutorials = Tutorial.query.all()
-    tutorial_list = [{'id': t.id, 'title': t.title, 'content': t.content, 'problem_id': t.problem_id, 'date_created': t.date_created} for t in tutorials]
-    return jsonify(tutorial_list), 200
-
-# Add a new tutorial
-@app.route('/tutorials', methods=['POST'])
-@jwt_required()
-def add_tutorial():
-    data = request.get_json()
-    title = data.get('title')
-    content = data.get('content')
-    problem_id = data.get('problem_id')
-    current_user = get_jwt_identity()
-
-    if not title or not content or not problem_id:
-        return bad_request(_('Missing title, content, or problem_id'))
-
-    tutorial = Tutorial(title=title, content=content, problem_id=problem_id)
-    db.session.add(tutorial)
-    try:
-        db.session.commit()
-    except IntegrityError:
-        db.session.rollback()
-        return jsonify({'message': _('Error saving tutorial')}), 500
-
-    return jsonify({'message': _('Tutorial added successfully')}), 201
-
-# Get a specific tutorial
-@app.route('/tutorials/<int:id>', methods=['GET'])
-def get_tutorial(id):
-    tutorial = Tutorial.query.filter_by(id=id).first()
-    if tutorial:
-        return jsonify({'id': tutorial.id, 'title': tutorial.title, 'content': tutorial.content, 'problem_id': tutorial.problem_id, 'date_created': tutorial.date_created}), 200
-    return jsonify({'message': _('Tutorial not found')}), 404
-
-# Get learning path for a user
-@app.route('/learning_path/<int:user_id>', methods=['GET'])
-@jwt_required()
-def get_learning_path(user_id):
-    learning_path = LearningPath.query.filter_by(user_id=user_id).first()
-    if learning_path:
-        return jsonify({'user_id': learning_path.user_id, 'problems': learning_path.problems, 'date_created': learning_path.date_created}), 200
-    return jsonify({'message': _('Learning path not found')}), 404
-
-# Create or update learning path for a user
-@app.route('/learning_path', methods=['POST'])
-@jwt_required()
-def create_update_learning_path():
-    data = request.get_json()
-    user_id = data.get('user_id')
-    problems = data.get('problems')
-
-    if not user_id or not problems:
-        return bad_request(_('Missing user_id or problems'))
-
-    learning_path = LearningPath.query.filter_by(user_id=user_id).first()
-    if learning_path:
-        learning_path.problems = problems
-    else:
-        learning_path = LearningPath(user_id=user_id, problems=problems)
-        db.session.add(learning_path)
-
-    try:
-        db.session.commit()
-    except IntegrityError:
-        db.session.rollback()
-        return jsonify({'message': _('Error saving learning path')}), 500
-
-    return jsonify({'message': _('Learning path saved successfully')}), 201
-
-# Get all users
-@app.route('/admin/users', methods=['GET'])
-@jwt_required()
-def get_users():
-    users = User.query.all()
-    user_list = [{'id': u.id, 'username': u.username, 'email': u.email} for u in users]
-    return jsonify(user_list), 200
-
-# Delete a user
-@app.route('/admin/users/<int:id>', methods=['DELETE'])
-@jwt_required()
-def delete_user(id):
-    user = User.query.filter_by(id=id).first()
-    if user:
-        db.session.delete(user)
-        db.session.commit()
-        return jsonify({'message': _('User deleted successfully')}), 200
-    return jsonify({'message': _('User not found')}), 404
-
-# Get all feedback
-@app.route('/admin/feedback', methods=['GET'])
-@jwt_required()
-def get_feedback():
-    feedback = Feedback.query.all()
-    feedback_list = [{'id': f.id, 'user_id': f.user_id, 'feedback': f.feedback, 'timestamp': f.timestamp} for f in feedback]
-    return jsonify(feedback_list), 200
-
-# SocketIO events for real-time collaboration
+# Socket.io events
 @socketio.on('join')
 def handle_join(data):
+    username = data['username']
     room = data['room']
     join_room(room)
-    send(f"{data['username']} has joined the room.", to=room)
+    send(room, f"{username} has entered the room.", broadcast=True)
 
 @socketio.on('leave')
 def handle_leave(data):
+    username = data['username']
     room = data['room']
     leave_room(room)
-    send(f"{data['username']} has left the room.", to=room)
+    send(room, f"{username} has left the room.", broadcast=True)
 
 @socketio.on('message')
 def handle_message(data):
-    room = data['room']
-    send(data['message'], to=room)
+    emit('message', data, broadcast=True)
 
-# SocketIO events for interactive whiteboard
-@socketio.on('draw')
-def handle_draw(data):
-    room = data['room']
-    emit('draw', data['drawData'], to=room)
-
-# Run the Flask application
+# Run the app
 if __name__ == '__main__':
     socketio.run(app, debug=True)
