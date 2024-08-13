@@ -11,6 +11,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+import datetime
 
 # Initialize the Flask application
 app = Flask(__name__)
@@ -232,57 +233,25 @@ def get_progress(user_id):
 def recommend(user_id):
     recommended_problem = recommend_problem(user_id)
     if recommended_problem:
-        return jsonify({
-            'problem_id': recommended_problem.id,
-            'question': recommended_problem.question,
-            'difficulty': recommended_problem.difficulty,
-            'feedback': recommended_problem.feedback
-        }), 200
-    else:
-        return jsonify({'message': _('No problems available')}), 404
+        return jsonify({'problem_id': recommended_problem.id, 'description': recommended_problem.description}), 200
+    return jsonify({'message': _('No problems available for recommendation')}), 404
 
-# Get user analytics endpoint
-@app.route('/analytics', methods=['GET'])
-@jwt_required()
-def get_analytics():
-    current_user = get_jwt_identity()
-    user = User.query.filter_by(id=current_user['user_id']).first()
-    if user:
-        progress = Progress.query.filter_by(user_id=user.id).all()
-        total_problems = len(progress)
-        correct_answers = sum(1 for p in progress if p.status == 'completed')
-        incorrect_answers = total_problems - correct_answers
-        performance_ratio = correct_answers / total_problems if total_problems else 0
-        feedbacks = Feedback.query.filter_by(user_id=user.id).all()
-        feedback_list = [{'feedback': f.feedback, 'timestamp': f.timestamp} for f in feedbacks]
-        return jsonify({
-            'username': user.username,
-            'total_problems': total_problems,
-            'correct_answers': correct_answers,
-            'incorrect_answers': incorrect_answers,
-            'performance_ratio': performance_ratio,
-            'feedbacks': feedback_list
-        }), 200
-    return jsonify({'message': _('User not found')}), 404
-
-# Socket.io events
+# SocketIO events for real-time communication
 @socketio.on('join')
 def handle_join(data):
-    username = data['username']
     room = data['room']
     join_room(room)
-    send(room, f"{username} has entered the room.", broadcast=True)
+    send(room, f"{data['username']} has entered the room.")
 
 @socketio.on('leave')
 def handle_leave(data):
-    username = data['username']
     room = data['room']
     leave_room(room)
-    send(room, f"{username} has left the room.", broadcast=True)
+    send(room, f"{data['username']} has left the room.")
 
 @socketio.on('message')
 def handle_message(data):
-    emit('message', data, broadcast=True)
+    emit('message', {'msg': data['msg']}, room=data['room'])
 
 # Run the app
 if __name__ == '__main__':
