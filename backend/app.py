@@ -11,7 +11,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-import datetime
+import random
 
 # Initialize the Flask application
 app = Flask(__name__)
@@ -51,8 +51,7 @@ limiter = Limiter(
 )
 
 # Import models after initializing extensions to avoid circular imports
-from backend.models import User, Progress, Problem, Feedback, Badge, Notification, Tutorial, LearningPath, PracticeSession, Discussion, Mentor
-
+from backend.models import User, Progress, Problem, Feedback, Badge, Notification, Tutorial, LearningPath, Hint, Comment
 from backend.utils import recommend_problem
 
 @babel.localeselector
@@ -193,6 +192,11 @@ def submit_feedback():
 
     return jsonify({'message': _('Feedback submitted successfully')}), 201
 
+# Home route
+@app.route('/')
+def home():
+    return _("Welcome to the Intelligent Math Tutor!")
+
 # Track user progress endpoint
 @app.route('/progress', methods=['POST'])
 @jwt_required()
@@ -229,54 +233,140 @@ def get_progress(user_id):
 def recommend(user_id):
     recommended_problem = recommend_problem(user_id)
     if recommended_problem:
-        return jsonify({'problem_id': recommended_problem.id, 'description': recommended_problem.description}), 200
-    return jsonify({'message': _('No problems available for recommendation')}), 404
+        return jsonify({
+            'problem_id': recommended_problem.id,
+            'question': recommended_problem.question,
+            'difficulty': recommended_problem.difficulty,
+            'feedback': recommended_problem.feedback
+        }), 200
+    else:
+        return jsonify({'message': _('No problems available')}), 404
 
-# SocketIO events for real-time communication
-@socketio.on('join')
-def handle_join(data):
-    room = data['room']
-    join_room(room)
-    send(room, f"{data['username']} has entered the room.")
-
-@socketio.on('leave')
-def handle_leave(data):
-    room = data['room']
-    leave_room(room)
-    send(room, f"{data['username']} has left the room.")
-
-@socketio.on('message')
-def handle_message(data):
-    emit('message', {'msg': data['msg']}, room=data['room'])
-
-# Additional endpoint to manage discussion forums
-@app.route('/discussion', methods=['GET'])
+# Get user analytics endpoint
+@app.route('/analytics', methods=['GET'])
 @jwt_required()
-def get_discussions():
-    discussions = Discussion.query.all()
-    discussion_list = [{'id': d.id, 'title': d.title, 'content': d.content, 'timestamp': d.timestamp} for d in discussions]
-    return jsonify(discussion_list), 200
+def get_analytics():
+    current_user = get_jwt_identity()
+    user = User.query.filter_by(id=current_user['user_id']).first()
+    if user:
+        progress = Progress.query.filter_by(user_id=user.id).all()
+        total_problems = len(progress)
+        correct_answers = sum(1 for p in progress if p.status == 'completed')
+        incorrect_answers = total_problems - correct_answers
+        performance_ratio = correct_answers / total_problems if total_problems else 0
+        feedback_count = Feedback.query.filter_by(user_id=user.id).count()
+        return jsonify({
+            'total_problems': total_problems,
+            'correct_answers': correct_answers,
+            'incorrect_answers': incorrect_answers,
+            'performance_ratio': performance_ratio,
+            'feedback_count': feedback_count
+        }), 200
+    return jsonify({'message': _('User not found')}), 404
 
-@app.route('/discussion', methods=['POST'])
+# Create a learning path for a user
+@app.route('/learning-path', methods=['POST'])
 @jwt_required()
-def create_discussion():
+def create_learning_path():
     data = request.get_json()
-    title = data.get('title')
-    content = data.get('content')
+    path_description = data.get('path_description')
 
-    if not title or not content:
-        return bad_request(_('Missing title or content'))
+    if not path_description:
+        return bad_request(_('Missing path description'))
 
-    new_discussion = Discussion(title=title, content=content, user_id=get_jwt_identity()['user_id'])
-    db.session.add(new_discussion)
+    new_path = LearningPath(user_id=get_jwt_identity()['user_id'], path_description=path_description)
+    db.session.add(new_path)
     try:
         db.session.commit()
     except IntegrityError:
         db.session.rollback()
-        return jsonify({'message': _('Error creating discussion')}), 500
+        return jsonify({'message': _('Error creating learning path')}), 500
 
-    return jsonify({'message': _('Discussion created successfully')}), 201
+    return jsonify({'message': _('Learning path created successfully')}), 201
 
-# Run the app
+# Get learning paths for a user
+@app.route('/learning-path/<int:user_id>', methods=['GET'])
+@jwt_required()
+def get_learning_paths(user_id):
+    paths = LearningPath.query.filter_by(user_id=user_id).all()
+    path_list = [{'id': p.id, 'path_description': p.path_description, 'timestamp': p.timestamp} for p in paths]
+    return jsonify(path_list), 200
+
+# Add a hint to a problem
+@app.route('/hint', methods=['POST'])
+@jwt_required()
+def add_hint():
+    data = request.get_json()
+    problem_id = data.get('problem_id')
+    hint_text = data.get('hint_text')
+
+    if not problem_id or not hint_text:
+        return bad_request(_('Missing problem_id or hint_text'))
+
+    new_hint = Hint(problem_id=problem_id, hint_text=hint_text)
+    db.session.add(new_hint)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'message': _('Error adding hint')}), 500
+
+    return jsonify({'message': _('Hint added successfully')}), 201
+
+# Get hints for a problem
+@app.route('/hint/<int:problem_id>', methods=['GET'])
+@jwt_required()
+def get_hints(problem_id):
+    hints = Hint.query.filter_by(problem_id=problem_id).all()
+    hint_list = [{'id': h.id, 'hint_text': h.hint_text, 'timestamp': h.timestamp} for h in hints]
+    return jsonify(hint_list), 200
+
+# Add a comment to a discussion
+@app.route('/comment', methods=['POST'])
+@jwt_required()
+def add_comment():
+    data = request.get_json()
+    discussion_id = data.get('discussion_id')
+    comment_text = data.get('comment_text')
+
+    if not discussion_id or not comment_text:
+        return bad_request(_('Missing discussion_id or comment_text'))
+
+    new_comment = Comment(discussion_id=discussion_id, user_id=get_jwt_identity()['user_id'], comment_text=comment_text)
+    db.session.add(new_comment)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'message': _('Error adding comment')}), 500
+
+    return jsonify({'message': _('Comment added successfully')}), 201
+
+# Get comments for a discussion
+@app.route('/comment/<int:discussion_id>', methods=['GET'])
+@jwt_required()
+def get_comments(discussion_id):
+    comments = Comment.query.filter_by(discussion_id=discussion_id).all()
+    comment_list = [{'id': c.id, 'user_id': c.user_id, 'comment_text': c.comment_text, 'timestamp': c.timestamp} for c in comments]
+    return jsonify(comment_list), 200
+
+# Socket.IO event handlers
+@socketio.on('join')
+def on_join(data):
+    room = data['room']
+    join_room(room)
+    send({'message': f'{data["username"]} has entered the room.'}, room=room)
+
+@socketio.on('leave')
+def on_leave(data):
+    room = data['room']
+    leave_room(room)
+    send({'message': f'{data["username"]} has left the room.'}, room=room)
+
+@socketio.on('message')
+def handle_message(data):
+    emit('response', {'message': data['message']}, room=data['room'])
+
+# Run the application
 if __name__ == '__main__':
     socketio.run(app, debug=True)
