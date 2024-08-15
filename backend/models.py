@@ -7,6 +7,10 @@ class User(db.Model):
     email = db.Column(db.String(150), unique=True, nullable=False)
     password = db.Column(db.String(150), nullable=False)
     progress = db.relationship('Progress', backref='user', lazy=True)
+    feedback = db.relationship('Feedback', backref='user', lazy=True)
+    badges = db.relationship('Badge', backref='user', lazy=True)
+    notifications = db.relationship('Notification', backref='user', lazy=True)
+    learning_paths = db.relationship('LearningPath', backref='user', lazy=True)
 
 class Problem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -47,3 +51,16 @@ class LearningPath(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     path_description = db.Column(db.String(500), nullable=False)
+
+class PracticeSession(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    problems = db.Column(db.String(500), nullable=False)
+    session_date = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Discussion(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(150), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
