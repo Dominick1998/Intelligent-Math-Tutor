@@ -3,64 +3,75 @@ from backend import db
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(150), unique=True, nullable=False)
-    email = db.Column(db.String(150), unique=True, nullable=False)
-    password = db.Column(db.String(150), nullable=False)
-    progress = db.relationship('Progress', backref='user', lazy=True)
-    feedback = db.relationship('Feedback', backref='user', lazy=True)
-    badges = db.relationship('Badge', backref='user', lazy=True)
-    notifications = db.relationship('Notification', backref='user', lazy=True)
-    learning_paths = db.relationship('LearningPath', backref='user', lazy=True)
-
-class Problem(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    description = db.Column(db.String(500), nullable=False)
-    difficulty = db.Column(db.String(50), nullable=False)  # 'easy', 'medium', 'hard'
+    username = db.Column(db.String(64), unique=True, index=True)
+    email = db.Column(db.String(120), unique=True, index=True)
+    password = db.Column(db.String(128))
+    progress = db.relationship('Progress', backref='user', lazy='dynamic')
+    feedback = db.relationship('Feedback', backref='user', lazy='dynamic')
+    badges = db.relationship('Badge', backref='user', lazy='dynamic')
+    notifications = db.relationship('Notification', backref='user', lazy='dynamic')
+    tutorials = db.relationship('Tutorial', backref='user', lazy='dynamic')
+    learning_paths = db.relationship('LearningPath', backref='user', lazy='dynamic')
 
 class Progress(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     problem_id = db.Column(db.Integer, db.ForeignKey('problem.id'), nullable=False)
-    status = db.Column(db.String(50), nullable=False)  # 'completed', 'incorrect', etc.
+    status = db.Column(db.String(50), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Problem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    question = db.Column(db.Text, nullable=False)
+    solution = db.Column(db.Text, nullable=False)
+    difficulty = db.Column(db.String(50), nullable=False)
+    feedback = db.Column(db.Text)
+    hints = db.relationship('Hint', backref='problem', lazy='dynamic')
 
 class Feedback(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    feedback = db.Column(db.String(500), nullable=False)
+    feedback = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Badge(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    badge_type = db.Column(db.String(50), nullable=False)
+    badge_name = db.Column(db.String(100), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    message = db.Column(db.String(500), nullable=False)
+    notification_text = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Tutorial(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(150), nullable=False)
-    content = db.Column(db.Text, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    tutorial_text = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 class LearningPath(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    path_description = db.Column(db.String(500), nullable=False)
+    path_description = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
-class PracticeSession(db.Model):
+class Hint(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    problem_id = db.Column(db.Integer, db.ForeignKey('problem.id'), nullable=False)
+    hint_text = db.Column(db.String(500), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Comment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    discussion_id = db.Column(db.Integer, db.ForeignKey('discussion.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    problems = db.Column(db.String(500), nullable=False)
-    session_date = db.Column(db.DateTime, default=datetime.utcnow)
+    comment_text = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Discussion(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(150), nullable=False)
-    content = db.Column(db.Text, nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    topic = db.Column(db.String(150), nullable=False)
+    comments = db.relationship('Comment', backref='discussion', lazy='dynamic')
