@@ -43,13 +43,13 @@ class Badge(db.Model):
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    notification_text = db.Column(db.Text, nullable=False)
+    message = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Tutorial(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    tutorial_text = db.Column(db.Text, nullable=False)
+    tutorial_content = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 class LearningPath(db.Model):
@@ -61,7 +61,7 @@ class LearningPath(db.Model):
 class Hint(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     problem_id = db.Column(db.Integer, db.ForeignKey('problem.id'), nullable=False)
-    hint_text = db.Column(db.String(500), nullable=False)
+    hint_text = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Comment(db.Model):
@@ -73,5 +73,6 @@ class Comment(db.Model):
 
 class Discussion(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    topic = db.Column(db.String(150), nullable=False)
+    discussion_title = db.Column(db.String(100), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     comments = db.relationship('Comment', backref='discussion', lazy='dynamic')
