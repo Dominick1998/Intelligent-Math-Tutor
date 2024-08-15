@@ -51,7 +51,8 @@ limiter = Limiter(
 )
 
 # Import models after initializing extensions to avoid circular imports
-from backend.models import User, Progress, Problem, Feedback, Badge, Notification, Tutorial, LearningPath
+from backend.models import User, Progress, Problem, Feedback, Badge, Notification, Tutorial, LearningPath, PracticeSession, Discussion, Mentor
+
 from backend.utils import recommend_problem
 
 @babel.localeselector
@@ -192,11 +193,6 @@ def submit_feedback():
 
     return jsonify({'message': _('Feedback submitted successfully')}), 201
 
-# Home route
-@app.route('/')
-def home():
-    return _("Welcome to the Intelligent Math Tutor!")
-
 # Track user progress endpoint
 @app.route('/progress', methods=['POST'])
 @jwt_required()
@@ -252,6 +248,34 @@ def handle_leave(data):
 @socketio.on('message')
 def handle_message(data):
     emit('message', {'msg': data['msg']}, room=data['room'])
+
+# Additional endpoint to manage discussion forums
+@app.route('/discussion', methods=['GET'])
+@jwt_required()
+def get_discussions():
+    discussions = Discussion.query.all()
+    discussion_list = [{'id': d.id, 'title': d.title, 'content': d.content, 'timestamp': d.timestamp} for d in discussions]
+    return jsonify(discussion_list), 200
+
+@app.route('/discussion', methods=['POST'])
+@jwt_required()
+def create_discussion():
+    data = request.get_json()
+    title = data.get('title')
+    content = data.get('content')
+
+    if not title or not content:
+        return bad_request(_('Missing title or content'))
+
+    new_discussion = Discussion(title=title, content=content, user_id=get_jwt_identity()['user_id'])
+    db.session.add(new_discussion)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'message': _('Error creating discussion')}), 500
+
+    return jsonify({'message': _('Discussion created successfully')}), 201
 
 # Run the app
 if __name__ == '__main__':
