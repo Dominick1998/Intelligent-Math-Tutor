@@ -1,7 +1,8 @@
 # Intelligent Math Tutor
 
 An intelligent tutoring system that provides personalized math problem-solving assistance. The system adapts to the user's performance and provides detailed feedback and hints for each problem. The application includes user authentication, progress tracking, and an interactive problem-solving interface.
-Created by Dominick
+
+Created by Dominick Ferro
 
 ## Table of Contents
 
