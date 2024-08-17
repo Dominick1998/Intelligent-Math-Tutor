@@ -280,17 +280,25 @@ def get_comments(discussion_id):
     return jsonify(comment_list), 200
 
 # Real-Time Collaboration - Socket.IO event handlers
+online_users = []
+
 @socketio.on('join')
 def on_join(data):
     room = data['room']
+    username = data['username']
     join_room(room)
-    send({'message': f'{data["username"]} has entered the room.'}, room=room)
+    online_users.append(username)
+    send({'message': f'{username} has entered the room.'}, room=room)
+    emit('user_joined', {'username': username, 'online_users': online_users}, room=room)
 
 @socketio.on('leave')
 def on_leave(data):
     room = data['room']
+    username = data['username']
     leave_room(room)
-    send({'message': f'{data["username"]} has left the room.'}, room=room)
+    online_users.remove(username)
+    send({'message': f'{username} has left the room.'}, room=room)
+    emit('user_left', {'username': username, 'online_users': online_users}, room=room)
 
 @socketio.on('message')
 def handle_message(data):
