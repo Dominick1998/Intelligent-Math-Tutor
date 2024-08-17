@@ -171,77 +171,6 @@ def get_dashboard():
         }), 200
     return jsonify({'message': _('User not found')}), 404
 
-# Submit user feedback endpoint
-@app.route('/feedback', methods=['POST'])
-@jwt_required()
-def submit_feedback():
-    current_user = get_jwt_identity()
-    data = request.get_json()
-    feedback_text = data.get('feedback')
-
-    if not feedback_text:
-        return bad_request(_('Missing feedback text'))
-
-    feedback = Feedback(user_id=current_user['user_id'], feedback=feedback_text)
-    db.session.add(feedback)
-    try:
-        db.session.commit()
-    except IntegrityError:
-        db.session.rollback()
-        return jsonify({'message': _('Error saving feedback')}), 500
-
-    return jsonify({'message': _('Feedback submitted successfully')}), 201
-
-# Home route
-@app.route('/')
-def home():
-    return _("Welcome to the Intelligent Math Tutor!")
-
-# Track user progress endpoint
-@app.route('/progress', methods=['POST'])
-@jwt_required()
-def track_progress():
-    data = request.get_json()
-    user_id = data.get('user_id')
-    problem_id = data.get('problem_id')
-    status = data.get('status')
-
-    if not user_id or not problem_id or not status:
-        return bad_request(_('Missing user_id, problem_id, or status'))
-
-    new_progress = Progress(user_id=user_id, problem_id=problem_id, status=status)
-    db.session.add(new_progress)
-    try:
-        db.session.commit()
-    except IntegrityError:
-        db.session.rollback()
-        return jsonify({'message': _('Error saving progress data')}), 500
-
-    return jsonify({'message': _('Progress tracked successfully')}), 201
-
-# Get user progress endpoint
-@app.route('/progress/<int:user_id>', methods=['GET'])
-@jwt_required()
-def get_progress(user_id):
-    progress = Progress.query.filter_by(user_id=user_id).all()
-    progress_list = [{'problem_id': p.problem_id, 'status': p.status, 'timestamp': p.timestamp} for p in progress]
-    return jsonify(progress_list), 200
-
-# Recommend a problem for the user
-@app.route('/recommend/<int:user_id>', methods=['GET'])
-@jwt_required()
-def recommend(user_id):
-    recommended_problem = recommend_problem(user_id)
-    if recommended_problem:
-        return jsonify({
-            'problem_id': recommended_problem.id,
-            'question': recommended_problem.question,
-            'difficulty': recommended_problem.difficulty,
-            'feedback': recommended_problem.feedback
-        }), 200
-    else:
-        return jsonify({'message': _('No problems available')}), 404
-
 # Get user analytics endpoint
 @app.route('/analytics', methods=['GET'])
 @jwt_required()
@@ -350,7 +279,7 @@ def get_comments(discussion_id):
     comment_list = [{'id': c.id, 'user_id': c.user_id, 'comment_text': c.comment_text, 'timestamp': c.timestamp} for c in comments]
     return jsonify(comment_list), 200
 
-# Socket.IO event handlers
+# Real-Time Collaboration - Socket.IO event handlers
 @socketio.on('join')
 def on_join(data):
     room = data['room']
@@ -366,6 +295,12 @@ def on_leave(data):
 @socketio.on('message')
 def handle_message(data):
     emit('response', {'message': data['message']}, room=data['room'])
+
+# Shared Whiteboard for real-time collaboration
+@socketio.on('draw')
+def handle_draw(data):
+    room = data['room']
+    emit('draw', data['drawData'], to=room)
 
 # Run the application
 if __name__ == '__main__':
