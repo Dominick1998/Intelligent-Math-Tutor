@@ -1,29 +1,44 @@
 import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
-import './Collaboration.css'; // Assuming you want to add some basic styles
+import './Collaboration.css';
 
-const socket = io.connect('http://localhost:5000'); // Update with your backend URL if different
+const socket = io.connect('http://localhost:5000');
 
 const Collaboration = () => {
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
+    const [username, setUsername] = useState('');
+    const [onlineUsers, setOnlineUsers] = useState([]);
     const canvasRef = useRef(null);
     const contextRef = useRef(null);
     const [isDrawing, setIsDrawing] = useState(false);
 
     useEffect(() => {
-        // Setup event listeners for incoming messages
+        // Prompt user for a username
+        const user = prompt("Enter your username:");
+        setUsername(user);
+
+        // Join the room with the username
+        socket.emit('join', { room: 'default', username: user });
+
         socket.on('response', (data) => {
             setMessages((prevMessages) => [...prevMessages, data.message]);
         });
 
-        // Setup event listeners for drawing
+        socket.on('user_joined', (data) => {
+            setOnlineUsers(data.online_users);
+        });
+
+        socket.on('user_left', (data) => {
+            setOnlineUsers(data.online_users);
+        });
+
+        // Setup drawing events
         socket.on('draw', (data) => {
             const { x0, y0, x1, y1 } = data;
             drawLine(x0, y0, x1, y1);
         });
 
-        // Setup the canvas
         const canvas = canvasRef.current;
         canvas.width = window.innerWidth * 0.8;
         canvas.height = window.innerHeight * 0.6;
@@ -35,6 +50,10 @@ const Collaboration = () => {
         context.lineWidth = 5;
         context.lineCap = 'round';
         contextRef.current = context;
+
+        return () => {
+            socket.emit('leave', { room: 'default', username: user });
+        };
     }, []);
 
     const handleMessageSubmit = (e) => {
@@ -79,6 +98,14 @@ const Collaboration = () => {
 
     return (
         <div className="collaboration-container">
+            <div className="online-users">
+                <h3>Online Users</h3>
+                <ul>
+                    {onlineUsers.map((user, index) => (
+                        <li key={index}>{user}</li>
+                    ))}
+                </ul>
+            </div>
             <div className="messages">
                 <ul>
                     {messages.map((msg, index) => (
