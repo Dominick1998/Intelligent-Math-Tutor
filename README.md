@@ -2,6 +2,8 @@
 
 An intelligent tutoring system that provides personalized math problem-solving assistance. The system adapts to the user's performance and provides detailed feedback and hints for each problem. The application includes user authentication, progress tracking, and an interactive problem-solving interface.
 
+Created by Dominick Ferro
+
 ## Table of Contents
 
 - [Features](#features)
@@ -240,10 +242,10 @@ An intelligent tutoring system that provides personalized math problem-solving a
   - Response: `[ { "id": 1, "title": "Addition Tutorial", "content": "Video URL or Text Content", "problem_id": 1, "date_created": "2023-01-01T00:00:00" }, ... ]`
 
 - **Add Tutorial:** `POST /tutorials`
-  - Request Body: `{ "title": "New Tutorial", "content": "Video URL or Text Content", "problem_id": 1 }`
- 
+  - Request Body: `{
 
- - Response: `{ "message": "Tutorial added successfully" }`
+ "title": "New Tutorial", "content": "Video URL or Text Content", "problem_id": 1 }`
+  - Response: `{ "message": "Tutorial added successfully" }`
 
 - **Get Tutorial:** `GET /tutorials/<int:id>`
   - Response: `{ "id": 1, "title": "Addition Tutorial", "content": "Video URL or Text Content", "problem_id": 1, "date_created": "2023-01-01T00:00:00" }`
