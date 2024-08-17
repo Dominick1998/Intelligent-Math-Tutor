@@ -1,13 +1,13 @@
-Flask==2.0.3
-SQLAlchemy==1.4.22
-Flask-JWT-Extended==4.3.1
-Flask-Bcrypt==0.7.1
-Flask-SQLAlchemy==2.5.1
-Flask-Migrate==3.1.0
-pytest
-pytest-flask
-Flask-Babel==2.0.0
-Flask-Limiter==1.4
-requests==2.26.0
-Flask-SocketIO==5.1.1
-python-socketio==5.4.0
+Flask==2.0.3              # Web framework for building the server-side of the application
+SQLAlchemy==1.4.22        # SQL toolkit and ORM for database interactions
+Flask-JWT-Extended==4.3.1 # Extension for handling JSON Web Tokens (JWT) for authentication
+Flask-Bcrypt==0.7.1       # Extension for password hashing using Bcrypt
+Flask-SQLAlchemy==2.5.1   # SQLAlchemy support for Flask applications
+Flask-Migrate==3.1.0      # Extension for handling SQLAlchemy database migrations in Flask
+pytest                    # Testing framework for writing and running tests
+pytest-flask              # Plugin for pytest that provides Flask-specific testing utilities
+Flask-Babel==2.0.0        # Extension for internationalization and localization (i18n and L10n) in Flask
+Flask-Limiter==1.4        # Extension for rate limiting API requests in Flask applications
+requests==2.26.0          # HTTP library for making requests to external APIs
+Flask-SocketIO==5.1.1     # Extension for real-time communication using WebSockets with Flask
+python-socketio==5.4.0    # Python client and server for Socket.IO, supporting real-time communication
