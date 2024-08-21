@@ -1,3 +1,4 @@
+# Import necessary modules
 from flask import Flask, request, jsonify, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
@@ -12,8 +13,6 @@ from logging.handlers import RotatingFileHandler
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import random
-from backend.chatbot import Chatbot
-from backend.progress_report import send_progress_report
 
 # Initialize the Flask application
 app = Flask(__name__)
@@ -32,7 +31,6 @@ jwt = JWTManager(app)
 migrate = Migrate(app, db)
 babel = Babel(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
-chatbot = Chatbot()  # Initialize chatbot
 
 # Set up logging
 if not os.path.exists('logs'):
@@ -54,12 +52,12 @@ limiter = Limiter(
 )
 
 # Import models after initializing extensions to avoid circular imports
-from backend.models import User, Progress, Problem, Feedback, Badge, Notification, Tutorial, LearningPath, Hint, Comment, ForumPost
+from backend.models import User, Progress, Problem, Feedback, Badge, Notification, Tutorial, LearningPath, Hint, Comment, ForumPost, Vote, Report
 from backend.utils import recommend_problem
 
 @babel.localeselector
 def get_locale():
-    return request.accept_languages.best_match(['en', 'es', 'fr', 'de', 'it'])
+    return request.accept_languages.best_match(['en', 'es', 'fr', 'de'])
 
 # Custom error handler for validation errors
 @app.errorhandler(400)
@@ -71,7 +69,6 @@ def bad_request(error):
 @app.errorhandler(401)
 def unauthorized(error):
     app.logger.error(f'Unauthorized: {error}')
-    return jsonify({'message': _('Unauthorized'), 'details': str(error)}), 401
 
 # User registration endpoint
 @app.route('/register', methods=['POST'])
