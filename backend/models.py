@@ -12,6 +12,9 @@ class User(db.Model):
     badges = db.relationship('Badge', backref='user', lazy=True)
     notifications = db.relationship('Notification', backref='user', lazy=True)
     forum_posts = db.relationship('ForumPost', backref='user', lazy=True)
+    comments = db.relationship('Comment', backref='user', lazy=True)
+    votes = db.relationship('Vote', backref='user', lazy=True)
+    reports = db.relationship('Report', backref='user', lazy=True)
 
 class Progress(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -72,6 +75,8 @@ class Comment(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     comment_text = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    votes = db.relationship('Vote', backref='comment', lazy=True)
+    reports = db.relationship('Report', backref='comment', lazy=True)
 
 class ForumPost(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -80,3 +85,21 @@ class ForumPost(db.Model):
     content = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     comments = db.relationship('Comment', backref='post', lazy=True)
+    votes = db.relationship('Vote', backref='post', lazy=True)
+    reports = db.relationship('Report', backref='post', lazy=True)
+
+class Vote(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('forum_post.id'))
+    comment_id = db.Column(db.Integer, db.ForeignKey('comment.id'))
+    value = db.Column(db.Integer, nullable=False)  # +1 for upvote, -1 for downvote
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Report(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('forum_post.id'))
+    comment_id = db.Column(db.Integer, db.ForeignKey('comment.id'))
+    reason = db.Column(db.String(500), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
