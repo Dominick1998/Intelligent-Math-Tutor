@@ -12,6 +12,8 @@ from logging.handlers import RotatingFileHandler
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import random
+from backend.chatbot import Chatbot
+from backend.progress_report import send_progress_report
 
 # Initialize the Flask application
 app = Flask(__name__)
@@ -30,6 +32,7 @@ jwt = JWTManager(app)
 migrate = Migrate(app, db)
 babel = Babel(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
+chatbot = Chatbot()  # Initialize chatbot
 
 # Set up logging
 if not os.path.exists('logs'):
@@ -51,12 +54,12 @@ limiter = Limiter(
 )
 
 # Import models after initializing extensions to avoid circular imports
-from backend.models import User, Progress, Problem, Feedback, Badge, Notification, Tutorial, LearningPath, Hint, Comment
+from backend.models import User, Progress, Problem, Feedback, Badge, Notification, Tutorial, LearningPath, Hint, Comment, ForumPost
 from backend.utils import recommend_problem
 
 @babel.localeselector
 def get_locale():
-    return request.accept_languages.best_match(['en', 'es', 'fr', 'de'])
+    return request.accept_languages.best_match(['en', 'es', 'fr', 'de', 'it'])
 
 # Custom error handler for validation errors
 @app.errorhandler(400)
@@ -280,25 +283,17 @@ def get_comments(discussion_id):
     return jsonify(comment_list), 200
 
 # Real-Time Collaboration - Socket.IO event handlers
-online_users = []
-
 @socketio.on('join')
 def on_join(data):
     room = data['room']
-    username = data['username']
     join_room(room)
-    online_users.append(username)
-    send({'message': f'{username} has entered the room.'}, room=room)
-    emit('user_joined', {'username': username, 'online_users': online_users}, room=room)
+    send({'message': f'{data["username"]} has entered the room.'}, room=room)
 
 @socketio.on('leave')
 def on_leave(data):
     room = data['room']
-    username = data['username']
     leave_room(room)
-    online_users.remove(username)
-    send({'message': f'{username} has left the room.'}, room=room)
-    emit('user_left', {'username': username, 'online_users': online_users}, room=room)
+    send({'message': f'{data["username"]} has left the room.'}, room=room)
 
 @socketio.on('message')
 def handle_message(data):
@@ -309,6 +304,29 @@ def handle_message(data):
 def handle_draw(data):
     room = data['room']
     emit('draw', data['drawData'], to=room)
+
+# Chatbot for assistance
+@app.route('/chatbot', methods=['POST'])
+@jwt_required()
+def chatbot_response():
+    data = request.get_json()
+    user_input = data.get('message')
+    if not user_input:
+        return bad_request(_('Missing message'))
+    
+    response = chatbot.get_response(user_input)
+    return jsonify({'message': response}), 200
+
+# Progress report generation
+@app.route('/send_report', methods=['POST'])
+@jwt_required()
+def send_report():
+    current_user = get_jwt_identity()
+    user = User.query.filter_by(id=current_user['user_id']).first()
+    if user:
+        send_progress_report(user)
+        return jsonify({'message': _('Progress report sent')}), 200
+    return jsonify({'message': _('User not found')}), 404
 
 # Run the application
 if __name__ == '__main__':
