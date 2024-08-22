@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, make_response
+from flask import Flask, request, jsonify, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, unset_jwt_cookies
@@ -51,7 +52,7 @@ limiter = Limiter(
 )
 
 # Import models after initializing extensions to avoid circular imports
-from backend.models import User, Progress, Problem, Feedback, Badge, Notification, Tutorial, LearningPath, Hint, Comment, Vote, Report, Follow, Message
+from backend.models import User, Progress, Problem, Feedback, Badge, Notification, Tutorial, LearningPath, Hint, Comment, Vote, Report, Follow, Message, Discussion, DiscussionTopic, DiscussionPost
 from backend.utils import recommend_problem
 
 @babel.localeselector
@@ -355,6 +356,64 @@ def get_messages():
         'sent': [{'id': m.id, 'recipient_id': m.recipient_id, 'message_text': m.message_text, 'timestamp': m.timestamp} for m in sent_messages]
     }
     return jsonify(messages), 200
+
+# Create a discussion topic
+@app.route('/discussion-topic', methods=['POST'])
+@jwt_required()
+def create_discussion_topic():
+    data = request.get_json()
+    topic_title = data.get('topic_title')
+    description = data.get('description')
+
+    if not topic_title or not description:
+        return bad_request(_('Missing topic_title or description'))
+
+    new_topic = DiscussionTopic(topic_title=topic_title, description=description)
+    db.session.add(new_topic)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'message': _('Error creating discussion topic')}), 500
+
+    return jsonify({'message': _('Discussion topic created successfully')}), 201
+
+# Get all discussion topics
+@app.route('/discussion-topics', methods=['GET'])
+@jwt_required()
+def get_discussion_topics():
+    topics = DiscussionTopic.query.all()
+    topic_list = [{'id': t.id, 'topic_title': t.topic_title, 'description': t.description, 'timestamp': t.timestamp} for t in topics]
+    return jsonify(topic_list), 200
+
+# Add a post to a discussion
+@app.route('/discussion-post', methods=['POST'])
+@jwt_required()
+def add_discussion_post():
+    data = request.get_json()
+    topic_id = data.get('topic_id')
+    post_content = data.get('post_content')
+
+    if not topic_id or not post_content:
+        return bad_request(_('Missing topic_id or post_content'))
+
+    new_post = DiscussionPost(topic_id=topic_id, user_id=get_jwt_identity()['user_id'], post_content=post_content)
+    db.session.add(new_post)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'message': _('Error adding discussion post')}), 500
+
+    return jsonify({'message': _('Discussion post added successfully')}), 201
+
+# Get all posts for a discussion topic
+@app.route('/discussion-posts/<int:topic_id>', methods=['GET'])
+@jwt_required()
+def get_discussion_posts(topic_id):
+    posts = DiscussionPost.query.filter_by(topic_id=topic_id).all()
+    post_list = [{'id': p.id, 'user_id': p.user_id, 'post_content': p.post_content, 'timestamp': p.timestamp} for p in posts]
+    return jsonify(post_list), 200
 
 # Real-Time Collaboration - Socket.IO event handlers
 @socketio.on('join')
