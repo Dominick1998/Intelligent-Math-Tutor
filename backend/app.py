@@ -51,7 +51,7 @@ limiter = Limiter(
 )
 
 # Import models after initializing extensions to avoid circular imports
-from backend.models import User, Progress, Problem, Feedback, Badge, Notification, Tutorial, LearningPath, Hint, Comment, Vote, Report, Follow
+from backend.models import User, Progress, Problem, Feedback, Badge, Notification, Tutorial, LearningPath, Hint, Comment, Vote, Report, Follow, Message
 from backend.utils import recommend_problem
 
 @babel.localeselector
@@ -319,6 +319,42 @@ def unfollow_user(followed_id):
         else:
             return bad_request(_('Not following this user'))
     return unauthorized(_('Unauthorized'))
+
+# Send a private message
+@app.route('/message', methods=['POST'])
+@jwt_required()
+def send_message():
+    data = request.get_json()
+    recipient_id = data.get('recipient_id')
+    message_text = data.get('message_text')
+
+    if not recipient_id or not message_text:
+        return bad_request(_('Missing recipient_id or message_text'))
+
+    current_user = get_jwt_identity()
+    new_message = Message(sender_id=current_user['user_id'], recipient_id=recipient_id, message_text=message_text)
+    db.session.add(new_message)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'message': _('Error sending message')}), 500
+
+    return jsonify({'message': _('Message sent successfully')}), 201
+
+# Get messages for a user
+@app.route('/messages', methods=['GET'])
+@jwt_required()
+def get_messages():
+    current_user = get_jwt_identity()
+    received_messages = Message.query.filter_by(recipient_id=current_user['user_id']).all()
+    sent_messages = Message.query.filter_by(sender_id=current_user['user_id']).all()
+
+    messages = {
+        'received': [{'id': m.id, 'sender_id': m.sender_id, 'message_text': m.message_text, 'timestamp': m.timestamp} for m in received_messages],
+        'sent': [{'id': m.id, 'recipient_id': m.recipient_id, 'message_text': m.message_text, 'timestamp': m.timestamp} for m in sent_messages]
+    }
+    return jsonify(messages), 200
 
 # Real-Time Collaboration - Socket.IO event handlers
 @socketio.on('join')
