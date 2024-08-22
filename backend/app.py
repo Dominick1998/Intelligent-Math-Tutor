@@ -69,6 +69,7 @@ def bad_request(error):
 @app.errorhandler(401)
 def unauthorized(error):
     app.logger.error(f'Unauthorized: {error}')
+    return jsonify({'message': _('Unauthorized'), 'details': str(error)}), 401
 
 # User registration endpoint
 @app.route('/register', methods=['POST'])
@@ -279,6 +280,68 @@ def get_comments(discussion_id):
     comment_list = [{'id': c.id, 'user_id': c.user_id, 'comment_text': c.comment_text, 'timestamp': c.timestamp} for c in comments]
     return jsonify(comment_list), 200
 
+# Vote on a forum post or comment
+@app.route('/vote', methods=['POST'])
+@jwt_required()
+def vote():
+    data = request.get_json()
+    user_id = get_jwt_identity()['user_id']
+    post_id = data.get('post_id')
+    comment_id = data.get('comment_id')
+    value = data.get('value')
+
+    if value not in [-1, 1]:
+        return bad_request(_('Invalid vote value'))
+
+    if not post_id and not comment_id:
+        return bad_request(_('Missing post_id or comment_id'))
+
+    if post_id:
+        vote = Vote.query.filter_by(user_id=user_id, post_id=post_id).first()
+    else:
+        vote = Vote.query.filter_by(user_id=user_id, comment_id=comment_id).first()
+
+    if vote:
+        vote.value = value
+    else:
+        new_vote = Vote(user_id=user_id, post_id=post_id, comment_id=comment_id, value=value)
+        db.session.add(new_vote)
+
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'message': _('Error saving vote')}), 500
+
+    return jsonify({'message': _('Vote recorded successfully')}), 201
+
+# Report a forum post or comment
+@app.route('/report', methods=['POST'])
+@jwt_required()
+def report():
+    data = request.get_json()
+    user_id = get_jwt_identity()['user_id']
+    post_id = data.get('post_id')
+    comment_id = data.get('comment_id')
+    reason = data.get('reason')
+
+    if not reason:
+        return bad_request(_('Missing report reason'))
+
+    if not post_id and not comment_id:
+        return bad_request(_('Missing post_id or comment_id'))
+
+    new_report = Report(user_id=user_id, post_id=post_id, comment_id=comment_id, reason=reason)
+    db.session.add(new_report)
+
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'message': _('Error saving report')}), 500
+
+    return jsonify({'message': _('Report submitted successfully')}), 201
+
 # Real-Time Collaboration - Socket.IO event handlers
 @socketio.on('join')
 def on_join(data):
@@ -301,29 +364,6 @@ def handle_message(data):
 def handle_draw(data):
     room = data['room']
     emit('draw', data['drawData'], to=room)
-
-# Chatbot for assistance
-@app.route('/chatbot', methods=['POST'])
-@jwt_required()
-def chatbot_response():
-    data = request.get_json()
-    user_input = data.get('message')
-    if not user_input:
-        return bad_request(_('Missing message'))
-    
-    response = chatbot.get_response(user_input)
-    return jsonify({'message': response}), 200
-
-# Progress report generation
-@app.route('/send_report', methods=['POST'])
-@jwt_required()
-def send_report():
-    current_user = get_jwt_identity()
-    user = User.query.filter_by(id=current_user['user_id']).first()
-    if user:
-        send_progress_report(user)
-        return jsonify({'message': _('Progress report sent')}), 200
-    return jsonify({'message': _('User not found')}), 404
 
 # Run the application
 if __name__ == '__main__':
