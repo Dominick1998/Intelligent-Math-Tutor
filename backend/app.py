@@ -1,4 +1,3 @@
-# Import necessary modules
 from flask import Flask, request, jsonify, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
@@ -52,7 +51,7 @@ limiter = Limiter(
 )
 
 # Import models after initializing extensions to avoid circular imports
-from backend.models import User, Progress, Problem, Feedback, Badge, Notification, Tutorial, LearningPath, Hint, Comment, ForumPost, Vote, Report
+from backend.models import User, Progress, Problem, Feedback, Badge, Notification, Tutorial, LearningPath, Hint, Comment, Vote, Report, Follow
 from backend.utils import recommend_problem
 
 @babel.localeselector
@@ -280,67 +279,46 @@ def get_comments(discussion_id):
     comment_list = [{'id': c.id, 'user_id': c.user_id, 'comment_text': c.comment_text, 'timestamp': c.timestamp} for c in comments]
     return jsonify(comment_list), 200
 
-# Vote on a forum post or comment
-@app.route('/vote', methods=['POST'])
+# Follow a user
+@app.route('/follow/<int:followed_id>', methods=['POST'])
 @jwt_required()
-def vote():
-    data = request.get_json()
-    user_id = get_jwt_identity()['user_id']
-    post_id = data.get('post_id')
-    comment_id = data.get('comment_id')
-    value = data.get('value')
+def follow_user(followed_id):
+    current_user = get_jwt_identity()
+    user = User.query.filter_by(id=current_user['user_id']).first()
+    if user:
+        followed_user = User.query.get(followed_id)
+        if followed_user:
+            follow = Follow(follower_id=user.id, followed_id=followed_id)
+            db.session.add(follow)
+            try:
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
+                return jsonify({'message': _('Error following user')}), 500
+            return jsonify({'message': _('User followed successfully')}), 201
+        else:
+            return bad_request(_('User not found'))
+    return unauthorized(_('Unauthorized'))
 
-    if value not in [-1, 1]:
-        return bad_request(_('Invalid vote value'))
-
-    if not post_id and not comment_id:
-        return bad_request(_('Missing post_id or comment_id'))
-
-    if post_id:
-        vote = Vote.query.filter_by(user_id=user_id, post_id=post_id).first()
-    else:
-        vote = Vote.query.filter_by(user_id=user_id, comment_id=comment_id).first()
-
-    if vote:
-        vote.value = value
-    else:
-        new_vote = Vote(user_id=user_id, post_id=post_id, comment_id=comment_id, value=value)
-        db.session.add(new_vote)
-
-    try:
-        db.session.commit()
-    except IntegrityError:
-        db.session.rollback()
-        return jsonify({'message': _('Error saving vote')}), 500
-
-    return jsonify({'message': _('Vote recorded successfully')}), 201
-
-# Report a forum post or comment
-@app.route('/report', methods=['POST'])
+# Unfollow a user
+@app.route('/unfollow/<int:followed_id>', methods=['DELETE'])
 @jwt_required()
-def report():
-    data = request.get_json()
-    user_id = get_jwt_identity()['user_id']
-    post_id = data.get('post_id')
-    comment_id = data.get('comment_id')
-    reason = data.get('reason')
-
-    if not reason:
-        return bad_request(_('Missing report reason'))
-
-    if not post_id and not comment_id:
-        return bad_request(_('Missing post_id or comment_id'))
-
-    new_report = Report(user_id=user_id, post_id=post_id, comment_id=comment_id, reason=reason)
-    db.session.add(new_report)
-
-    try:
-        db.session.commit()
-    except IntegrityError:
-        db.session.rollback()
-        return jsonify({'message': _('Error saving report')}), 500
-
-    return jsonify({'message': _('Report submitted successfully')}), 201
+def unfollow_user(followed_id):
+    current_user = get_jwt_identity()
+    user = User.query.filter_by(id=current_user['user_id']).first()
+    if user:
+        follow = Follow.query.filter_by(follower_id=user.id, followed_id=followed_id).first()
+        if follow:
+            db.session.delete(follow)
+            try:
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
+                return jsonify({'message': _('Error unfollowing user')}), 500
+            return jsonify({'message': _('User unfollowed successfully')}), 200
+        else:
+            return bad_request(_('Not following this user'))
+    return unauthorized(_('Unauthorized'))
 
 # Real-Time Collaboration - Socket.IO event handlers
 @socketio.on('join')
