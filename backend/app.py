@@ -13,25 +13,6 @@ from logging.handlers import RotatingFileHandler
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import random
-from flask import Flask
-from backend.routes import api_bp
-from backend.logging_middleware import log_request_and_response
-from backend.log_rotation import setup_log_rotation
-
-# Set up log rotation
-setup_log_rotation()
-
-# Initialize the Flask application
-app = Flask(__name__)
-
-# Apply logging middleware to log requests and responses
-app = log_request_and_response(app)
-
-# Register the Blueprint for API routes
-app.register_blueprint(api_bp)
-
-if __name__ == '__main__':
-    app.run(debug=True)
 
 # Initialize the Flask application
 app = Flask(__name__)
