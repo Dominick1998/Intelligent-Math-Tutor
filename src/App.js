@@ -54,4 +54,4 @@ const App = () => {
 
 export default App;
 
-// Java app 
+// End of Javascript app 
